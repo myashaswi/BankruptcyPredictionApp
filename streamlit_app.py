@@ -14,13 +14,13 @@ If you don't upload anything, we will use a sample company data.
 # Define expected CSV columns
 expected_columns = [
     'working_capital_ratio',
-    'roe',
     'roa',
-    'gross_profit_margin',
+    'ebit_to_assets',
+    'debt_to_equity',
     'interest_coverage',
-    'debt_to_equity_ratio',
-    'current_ratio',
-    'asset_turnover'
+    'ocf_to_debt',
+    'receivables_turnover',
+    'payables_turnover_days'
 ]
 
 # Sample data if no file uploaded
