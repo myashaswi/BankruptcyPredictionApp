@@ -101,7 +101,7 @@ if uploaded_file is not None:
         st.altair_chart(chart, use_container_width=True)
         
         st.subheader("Detailed Company-Level Predictions")
-        st.dataframe(input_data[['Industry'] + expected_features + ['Prediction', 'Bankruptcy Probability']].style.format({"Bankruptcy Probability": "{:.2f}"}))
+        st.dataframe(input_data[['Industry'] + expected_features + ['Prediction', 'Bankruptcy Probability']])
 
     else:
         st.error(f"❌ Uploaded file must contain the following columns: {required_columns}")
