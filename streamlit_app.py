@@ -1,129 +1,131 @@
+# Bankruptcy Prediction App - Final Streamlit Code
+# (BankruptcyPredictionApp2 repository)
+
 import streamlit as st
 import pandas as pd
+import numpy as np
+import yfinance as yf
 import joblib
-import altair as alt
+from datetime import datetime
 
-# Load the saved model
+# Load Model and Scaler
 model = joblib.load('model.pkl')
+scaler = joblib.load('scaler.pkl')
 
-# Industry mapping
-industry_mapping = {
-    3520: "Pharmaceuticals, Biotechnology & Life Sciences",
-    3510: "Health Care Equipment & Services",
-    1010: "Energy",
-    2550: "Consumer Discretionary Distribution & Retail",
-    4510: "Software & Services",
-    2010: "Capital Goods",
-    2530: "Consumer Services",
-    3030: "Household & Personal Products",
-    1510: "Materials",
-    4520: "Technology Hardware & Equipment"
-}
-
-# Expected feature columns for model prediction
-expected_features = [
-    'working_capital_ratio',
-    'roa',
-    'ebit_to_assets',
-    'debt_to_equity',
-    'interest_coverage',
-    'ocf_to_debt',
-    'receivables_turnover',
-    'payables_turnover_days'
+# Define Features
+features = [
+    'working_capital_ratio', 'roa', 'ebit_to_assets', 'debt_to_equity',
+    'interest_coverage', 'ocf_to_debt', 'receivables_turnover', 'payables_turnover_days'
 ]
 
-# Streamlit page setup
-st.set_page_config(page_title="Bankruptcy Prediction Dashboard", layout="wide")
-st.sidebar.title("📊 Bankruptcy Prediction App")
-st.sidebar.markdown("""
-Upload your company financial ratios CSV file.
+# Page Config
+st.set_page_config(page_title='Bankruptcy Prediction App', layout='wide', initial_sidebar_state='expanded')
 
-**Instructions:**
-- File must include **ggroup** and the 8 financial ratio columns.
-- App will predict bankruptcy likelihood and summarize insights across industries!
-""")
+# Sidebar Navigation
+st.sidebar.title('Navigation')
+page = st.sidebar.radio("Go to", [
+    '📚 About this App',
+    '🔎 Bankruptcy Prediction'
+])
 
-# Main Title
-st.title("📉 Bankruptcy Prediction Dashboard")
-st.subheader("Analyze bankruptcy likelihood across industries based on financial health indicators")
+# About this App Page
+if page == '📚 About this App':
+    st.title('Bankruptcy Prediction App')
+    st.header('Altman Z-Score Model Adaptation')
 
-uploaded_file = st.file_uploader("Upload your company financial ratios CSV", type="csv")
+    st.markdown("""
+    ### What, How, Why?
 
-if uploaded_file is not None:
-    input_data = pd.read_csv(uploaded_file)
+    **What?**
+    This app uses an adaptation of the Altman Z-Score model trained on financial ratios to predict potential bankruptcy risk over a 5-year horizon.
 
-    # Validate columns
-    required_columns = ['ggroup'] + expected_features
-    if all(col in input_data.columns for col in required_columns):
-        st.success("✅ File uploaded successfully!")
-        
-        # Map ggroup codes to industry names
-        input_data['Industry'] = input_data['ggroup'].map(industry_mapping)
-        
-        # Drop rows without a valid industry mapping
-        input_data = input_data.dropna(subset=['Industry'])
-        
-        # Preview Uploaded Data
-        st.subheader("📄 Uploaded Data Preview")
-        st.dataframe(input_data[['Industry'] + expected_features].head(10))
-        
-        # Make predictions
-        X = input_data[expected_features]
-        predictions = model.predict(X)
-        prediction_probs = model.predict_proba(X)[:, 1]  # Probability of bankruptcy
-        
-        input_data['Prediction'] = predictions
-        input_data['Bankruptcy Probability'] = prediction_probs
-        
-        # Format Bankruptcy Probability nicely
-        input_data['Bankruptcy Probability'] = input_data['Bankruptcy Probability'].apply(lambda x: round(x, 2))
-        
-        # Overall Summary Metrics
-        total_companies = len(input_data)
-        total_bankruptcies = (input_data['Prediction'] == 1).sum()
-        bankruptcy_percentage = (total_bankruptcies / total_companies) * 100
-        
-        st.markdown("---")
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric(label="Total Companies Analyzed", value=f"{total_companies}")
-        with col2:
-            st.metric(label="Companies Likely to go Bankrupt", value=f"{total_bankruptcies} ({bankruptcy_percentage:.2f}%)")
-        
-        st.markdown("---")
-        
-        # Group by Industry
-        industry_summary = input_data.groupby('Industry').agg(
-            Total_Companies=('Prediction', 'count'),
-            Bankruptcies=('Prediction', 'sum')
-        ).reset_index()
-        industry_summary['Bankruptcy_Rate (%)'] = (industry_summary['Bankruptcies'] / industry_summary['Total_Companies']) * 100
-        
-        # Display industry-level insights
-        st.subheader("📊 Bankruptcy Risk by Industry")
-        st.dataframe(industry_summary.style.format({"Bankruptcy_Rate (%)": "{:.2f}"}))
-        
-        # Bar Chart Visualization
-        st.subheader("📈 Visual: Number of Bankruptcies by Industry")
-        chart = alt.Chart(industry_summary).mark_bar().encode(
-            x=alt.X('Industry', sort='-y', title="Industry"),
-            y=alt.Y('Bankruptcies', title="Number of Bankruptcies"),
-            color=alt.Color('Bankruptcies', scale=alt.Scale(scheme='oranges'))
-        ).properties(
-            width=800,
-            height=400
-        )
-        st.altair_chart(chart, use_container_width=True)
-        
-        st.markdown("---")
-        
-        # Detailed Company-Level Predictions inside an Expander
-        with st.expander("📋 See Detailed Company-Level Predictions"):
-            st.dataframe(
-                input_data[['Industry'] + expected_features + ['Prediction', 'Bankruptcy Probability']]
-            )
+    **Why?**
+    Early warning of bankruptcy risk can help investors, auditors, and management teams prioritize deeper investigation and financial health assessments.
 
-    else:
-        st.error(f"❌ Uploaded file must contain the following columns: {required_columns}")
-else:
-    st.info("👈 Please upload a CSV file to begin analysis.")
+    **How?**
+    Using a logistic regression model trained on Compustat data from 2013-2023, across 26 industries. Predictions are based on 8 standardized financial ratios commonly associated with firm stability.
+
+    - **Training Horizon:** 7 years
+    - **Testing Horizon:** 3 years
+    - **Prediction Horizon:** 5 years ahead bankruptcy risk
+
+    --
+    **GitHub Repository**: [Link to this App's Repository](https://github.com/your-username/BankruptcyPredictionApp2)
+    """)
+
+# Bankruptcy Prediction Page
+elif page == '🔎 Bankruptcy Prediction':
+    st.title('Bankruptcy Prediction for a Public Company')
+
+    st.markdown("""
+    ### Instructions:
+    1. Enter a valid stock ticker (example: AAPL, MSFT, TSLA).
+    2. App will pull recent financial data from Yahoo Finance.
+    3. App will compute financial ratios and predict bankruptcy likelihood.
+    """)
+
+    ticker = st.text_input('Enter Stock Ticker:', value='AAPL')
+
+    if st.button('Predict Bankruptcy Risk'):
+        try:
+            ticker_data = yf.Ticker(ticker)
+            bs = ticker_data.balance_sheet
+            is_data = ticker_data.financials
+            cf = ticker_data.cashflow
+
+            # Check if all necessary data is available
+            required_bs_items = ['Total Current Assets', 'Total Current Liabilities', 'Total Assets', 'Total Debt']
+            required_is_items = ['Net Income', 'EBIT', 'Total Revenue']
+            required_cf_items = ['Total Cash From Operating Activities']
+
+            # Extract required items safely
+            def get_value(df, item):
+                try:
+                    return df.loc[item].iloc[0]
+                except:
+                    return np.nan
+
+            data_dict = {
+                'Total Current Assets': get_value(bs, 'Total Current Assets'),
+                'Total Current Liabilities': get_value(bs, 'Total Current Liabilities'),
+                'Total Assets': get_value(bs, 'Total Assets'),
+                'Total Debt': get_value(bs, 'Total Debt'),
+                'Net Income': get_value(is_data, 'Net Income'),
+                'EBIT': get_value(is_data, 'EBIT'),
+                'Total Revenue': get_value(is_data, 'Total Revenue'),
+                'Operating Cash Flow': get_value(cf, 'Total Cash From Operating Activities')
+            }
+
+            df_input = pd.DataFrame([data_dict])
+
+            if df_input.isnull().sum().sum() > 0:
+                st.warning('⚠️ Some financial data missing. Prediction may not be reliable.')
+
+            # Calculate Ratios
+            df_input['working_capital_ratio'] = (df_input['Total Current Assets'] - df_input['Total Current Liabilities']) / df_input['Total Assets']
+            df_input['roa'] = df_input['Net Income'] / df_input['Total Assets']
+            df_input['ebit_to_assets'] = df_input['EBIT'] / df_input['Total Assets']
+            df_input['debt_to_equity'] = df_input['Total Debt'] / (df_input['Total Assets'] - df_input['Total Debt'])
+            df_input['interest_coverage'] = df_input['EBIT'] / (0.05 * df_input['Total Debt'])  # approximate
+            df_input['ocf_to_debt'] = df_input['Operating Cash Flow'] / df_input['Total Debt']
+            df_input['receivables_turnover'] = df_input['Total Revenue'] / (0.2 * df_input['Total Current Assets'])  # approximate
+            df_input['payables_turnover_days'] = (df_input['Total Current Liabilities'] / (0.6 * df_input['Total Revenue'])) * 365  # approximate
+
+            # Select and scale features
+            X_input = df_input[features]
+            X_scaled = scaler.transform(X_input)
+
+            # Predict
+            prediction = model.predict(X_scaled)
+            probability = model.predict_proba(X_scaled)[:, 1][0]
+
+            st.success(f'✅ Prediction completed for {ticker.upper()}')
+            st.metric('Bankruptcy Probability (5 Years)', f'{probability:.2%}')
+
+            if prediction[0] == 1:
+                st.error('⚠️ High Risk of Bankruptcy (Model Prediction: Bankrupt)')
+            else:
+                st.success('✅ Low Risk of Bankruptcy (Model Prediction: Not Bankrupt)')
+
+        except Exception as e:
+            st.error(f"An error occurred: {str(e)}")
