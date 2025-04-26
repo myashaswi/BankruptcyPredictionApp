@@ -50,7 +50,7 @@ if page == '📚 About this App':
     - **Prediction Horizon:** 5 years ahead bankruptcy risk
 
     --
-    **GitHub Repository**: [Link to this App's Repository](https://github.com/your-username/BankruptcyPredictionApp2)
+    **GitHub Repository**: [Link to this App's Repository](https://github.com/myashaswi/BankruptcyPredictionApp2)
     """)
 
 # Bankruptcy Prediction Page
