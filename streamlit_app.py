@@ -33,21 +33,25 @@ expected_features = [
 ]
 
 # Streamlit page setup
-st.set_page_config(page_title="Bankruptcy Prediction App", layout="wide")
+st.set_page_config(page_title="Bankruptcy Prediction Dashboard", layout="wide")
 st.sidebar.title("📊 Bankruptcy Prediction App")
 st.sidebar.markdown("""
-Upload your company financial ratios dataset (must include **ggroup** code and 8 financial features).
+Upload your company financial ratios CSV file.
 
-App will predict bankruptcy risk and summarize by Industry!
+**Instructions:**
+- File must include **ggroup** and the 8 financial ratio columns.
+- App will predict bankruptcy likelihood and summarize insights across industries!
 """)
 
-st.title("🚀 Bankruptcy Prediction App")
+# Main Title
+st.title("📉 Bankruptcy Prediction Dashboard")
+st.subheader("Analyze bankruptcy likelihood across industries based on financial health indicators")
 
 uploaded_file = st.file_uploader("Upload your company financial ratios CSV", type="csv")
 
 if uploaded_file is not None:
     input_data = pd.read_csv(uploaded_file)
-    
+
     # Validate columns
     required_columns = ['ggroup'] + expected_features
     if all(col in input_data.columns for col in required_columns):
@@ -59,8 +63,8 @@ if uploaded_file is not None:
         # Drop rows without a valid industry mapping
         input_data = input_data.dropna(subset=['Industry'])
         
-        # Show the uploaded data
-        st.subheader("Uploaded Data Preview:")
+        # Preview Uploaded Data
+        st.subheader("📄 Uploaded Data Preview")
         st.dataframe(input_data[['Industry'] + expected_features].head(10))
         
         # Make predictions
@@ -71,28 +75,39 @@ if uploaded_file is not None:
         input_data['Prediction'] = predictions
         input_data['Bankruptcy Probability'] = prediction_probs
         
-        # Summary metrics
+        # Format Bankruptcy Probability nicely
+        input_data['Bankruptcy Probability'] = input_data['Bankruptcy Probability'].apply(lambda x: round(x, 2))
+        
+        # Overall Summary Metrics
         total_companies = len(input_data)
         total_bankruptcies = (input_data['Prediction'] == 1).sum()
         bankruptcy_percentage = (total_bankruptcies / total_companies) * 100
         
-        st.metric(label="Total Companies Analyzed", value=f"{total_companies}")
-        st.metric(label="Companies Likely to go Bankrupt", value=f"{total_bankruptcies} ({bankruptcy_percentage:.2f}%)")
+        st.markdown("---")
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric(label="Total Companies Analyzed", value=f"{total_companies}")
+        with col2:
+            st.metric(label="Companies Likely to go Bankrupt", value=f"{total_bankruptcies} ({bankruptcy_percentage:.2f}%)")
         
-        # Group by industry
+        st.markdown("---")
+        
+        # Group by Industry
         industry_summary = input_data.groupby('Industry').agg(
             Total_Companies=('Prediction', 'count'),
             Bankruptcies=('Prediction', 'sum')
         ).reset_index()
         industry_summary['Bankruptcy_Rate (%)'] = (industry_summary['Bankruptcies'] / industry_summary['Total_Companies']) * 100
         
+        # Display industry-level insights
         st.subheader("📊 Bankruptcy Risk by Industry")
         st.dataframe(industry_summary.style.format({"Bankruptcy_Rate (%)": "{:.2f}"}))
         
-        # Bar chart visualization
+        # Bar Chart Visualization
+        st.subheader("📈 Visual: Number of Bankruptcies by Industry")
         chart = alt.Chart(industry_summary).mark_bar().encode(
             x=alt.X('Industry', sort='-y', title="Industry"),
-            y=alt.Y('Bankruptcies', title='Number of Bankruptcies'),
+            y=alt.Y('Bankruptcies', title="Number of Bankruptcies"),
             color=alt.Color('Bankruptcies', scale=alt.Scale(scheme='oranges'))
         ).properties(
             width=800,
@@ -100,10 +115,15 @@ if uploaded_file is not None:
         )
         st.altair_chart(chart, use_container_width=True)
         
-        st.subheader("Detailed Company-Level Predictions")
-        st.dataframe(input_data[['Industry'] + expected_features + ['Prediction', 'Bankruptcy Probability']])
+        st.markdown("---")
+        
+        # Detailed Company-Level Predictions inside an Expander
+        with st.expander("📋 See Detailed Company-Level Predictions"):
+            st.dataframe(
+                input_data[['Industry'] + expected_features + ['Prediction', 'Bankruptcy Probability']]
+            )
 
     else:
         st.error(f"❌ Uploaded file must contain the following columns: {required_columns}")
 else:
-    st.info("👈 Please upload a CSV file to get started.")
+    st.info("👈 Please upload a CSV file to begin analysis.")
