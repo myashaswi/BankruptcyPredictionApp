@@ -16,7 +16,7 @@ features = [
 ]
 
 # Set theme colors
-RED = "#FF0000"
+RED = "#c95c5d"
 
 # Sidebar Navigation
 st.sidebar.title("Navigation - Go to:")
