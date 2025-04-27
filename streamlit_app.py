@@ -62,74 +62,80 @@ elif page.startswith("2"):
             bs = stock.balance_sheet
             cf = stock.cashflow
 
-            # Soft Fetch ratios
+            # Fetch financials smartly
             ratios = {}
 
             try:
                 ratios['working_capital_ratio'] = (bs.loc['Total Current Assets'][0] - bs.loc['Total Current Liabilities'][0]) / bs.loc['Total Assets'][0]
             except:
-                ratios['working_capital_ratio'] = 0
+                ratios['working_capital_ratio'] = np.nan
 
             try:
                 ratios['roa'] = fin.loc['Net Income'][0] / bs.loc['Total Assets'][0]
             except:
-                ratios['roa'] = 0
+                ratios['roa'] = np.nan
 
             try:
                 ratios['ebit_to_assets'] = fin.loc['EBIT'][0] / bs.loc['Total Assets'][0]
             except:
-                ratios['ebit_to_assets'] = 0
+                ratios['ebit_to_assets'] = np.nan
 
             try:
                 ratios['debt_to_equity'] = bs.loc['Total Debt'][0] / (bs.loc['Total Assets'][0] - bs.loc['Total Debt'][0])
             except:
-                ratios['debt_to_equity'] = 0
+                ratios['debt_to_equity'] = np.nan
 
             try:
                 ratios['interest_coverage'] = fin.loc['EBIT'][0] / (fin.loc['Interest Expense'][0])
             except:
-                ratios['interest_coverage'] = 0
+                ratios['interest_coverage'] = np.nan
 
             try:
                 ratios['ocf_to_debt'] = cf.loc['Total Cash From Operating Activities'][0] / bs.loc['Total Debt'][0]
             except:
-                ratios['ocf_to_debt'] = 0
+                ratios['ocf_to_debt'] = np.nan
 
             try:
                 ratios['receivables_turnover'] = fin.loc['Total Revenue'][0] / bs.loc['Accounts Receivable'][0]
             except:
-                ratios['receivables_turnover'] = 0
+                ratios['receivables_turnover'] = np.nan
 
             try:
                 ratios['payables_turnover_days'] = (bs.loc['Accounts Payable'][0] / fin.loc['Cost Of Revenue'][0]) * 365
             except:
-                ratios['payables_turnover_days'] = 0
+                ratios['payables_turnover_days'] = np.nan
 
             input_df = pd.DataFrame([ratios])
 
             st.subheader("Input Ratios Used:")
             st.dataframe(input_df)
 
-            scaled = scaler.transform(input_df)
-            pred = model.predict_proba(scaled)[0][1]
-            pred_percent = pred * 100
+            # Check for too many NaNs
+            if input_df.isnull().mean().mean() > 0.5:
+                st.warning("⚠️ Insufficient financial data to predict bankruptcy risk for this company.")
+            else:
+                input_df = input_df.fillna(0)
+                scaled = scaler.transform(input_df)
 
-            # Plot Gauge Chart
-            fig = go.Figure(go.Indicator(
-                mode="gauge+number",
-                value=pred_percent,
-                title={'text': "Bankruptcy Probability"},
-                gauge={
-                    'axis': {'range': [0, 100]},
-                    'bar': {'color': prussian_red},
-                    'steps': [
-                        {'range': [0, 30], 'color': "lightgreen"},
-                        {'range': [30, 70], 'color': "yellow"},
-                        {'range': [70, 100], 'color': "red"}
-                    ],
-                }
-            ))
-            st.plotly_chart(fig, use_container_width=True)
+                pred = model.predict_proba(scaled)[0][1]
+                pred_percent = pred * 100
+
+                # Plot Gauge Chart
+                fig = go.Figure(go.Indicator(
+                    mode="gauge+number",
+                    value=pred_percent,
+                    title={'text': "Bankruptcy Probability"},
+                    gauge={
+                        'axis': {'range': [0, 100]},
+                        'bar': {'color': prussian_red},
+                        'steps': [
+                            {'range': [0, 30], 'color': "lightgreen"},
+                            {'range': [30, 70], 'color': "yellow"},
+                            {'range': [70, 100], 'color': "red"}
+                        ],
+                    }
+                ))
+                st.plotly_chart(fig, use_container_width=True)
 
         except Exception as e:
             st.error(f"Failed to fetch data or predict. Error: {e}")
