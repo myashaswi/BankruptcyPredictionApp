@@ -7,8 +7,8 @@ import pickle
 import joblib
 
 # Load model and scaler
-model = pickle.load(open("model (1).pkl", "rb"))
-scaler = joblib.load("scaler (1).pkl")
+model = pickle.load(open("model.pkl", "rb"))
+scaler = joblib.load("scaler.pkl")
 
 # Set page configuration
 st.set_page_config(page_title="Bankruptcy Prediction App", layout="wide")
