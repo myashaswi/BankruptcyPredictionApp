@@ -1,70 +1,71 @@
-# ========================
-# Bankruptcy Prediction App
-# Final Streamlit Code
-# ========================
-
 import streamlit as st
 import pandas as pd
 import yfinance as yf
 import pickle
-from sklearn.preprocessing import StandardScaler
+import joblib
 import numpy as np
-import datetime
+import plotly.graph_objects as go
 
-# Load model and scaler
-model = pickle.load(open('model.pkl', 'rb'))
-scaler = pickle.load(open('scaler.pkl', 'rb'))
+# Load the trained model and scaler
+model = pickle.load(open("model.pkl", "rb"))
+scaler = joblib.load("scaler.pkl")
 
-# Set page configuration
-st.set_page_config(page_title="Bankruptcy Prediction App", layout="wide")
+# Define financial ratios needed
+required_fields = {
+    "Total Current Assets": "current_assets",
+    "Total Current Liabilities": "current_liabilities",
+    "Total Assets": "total_assets",
+    "Total Debt": "total_debt",
+    "EBIT": "ebit",
+    "Net Income": "net_income",
+    "Operating Cash Flow": "ocf",
+    "Accounts Receivable": "accounts_receivable",
+    "Gross PPE": "gross_ppe",
+    "Total Revenue": "revenue"
+}
 
-# Define page options
-page = st.sidebar.radio(
-    "Navigation - Go to:",
-    [
-        "1 About this App",
-        "2 Bankruptcy Prediction Based on Ticker",
-        "3 Model Training Code",
-        "4 Full Streamlit App Code",
-        "5 Manually Enter Data"
-    ]
-)
+# Sidebar Navigation
+page = st.sidebar.radio("Navigation - Go to:", [
+    "1 About this App",
+    "2 Bankruptcy Prediction Based on Ticker",
+    "3 Model Training Code",
+    "4 Full Streamlit App Code",
+    "5 Manually Enter Data"
+])
 
-# ----------- PAGE 1: About this App ----------- #
+st.sidebar.markdown("---")
+st.sidebar.markdown("Made with ❤️ in #c95c5d")
+
+# Set Red  Title
+Red = "#c95c5d"
+
 if page.startswith("1"):
     st.title("Altman Z-Score Inspired Industry-Specific Model")
+    st.markdown(f"<h2 style='color:{prussian_red};'>What, How, Why?</h2>", unsafe_allow_html=True)
 
-    st.subheader("What, How, Why?")
-    st.markdown(
-        f"""
-        <h3 style="color:#c95c5d;">What?</h3>
-        This app predicts bankruptcy risk using a customized logistic regression model with <b>industry-specific intercepts (alphas)</b> and <b>key financial ratios (betas)</b>.
+    st.markdown(f"<h3 style='color:{prussian_red};'>What?</h3>", unsafe_allow_html=True)
+    st.write("This app predicts bankruptcy risk using a customized logistic regression model, designed with **industry-specific intercepts (alphas)** and **key financial ratios (betas)**.")
 
-        <h3 style="color:#c95c5d;">Why?</h3>
-        Early prediction of bankruptcy risk helps prioritize audits, deeper analysis, and proactive decision-making.
+    st.markdown(f"<h3 style='color:{prussian_red};'>Why?</h3>", unsafe_allow_html=True)
+    st.write("Predicting bankruptcy risk early can help prioritize audits, deeper analysis, and proactive financial decisions.")
 
-        <h3 style="color:#c95c5d;">How?</h3>
-        We trained a model using:
-        <ul>
-            <li>Financial ratios like ROA, Debt-to-Equity, Interest Coverage, etc.</li>
-            <li>Industry dummy variables for 10 industries</li>
-            <li>Logistic regression combining both to predict 5-year bankruptcy likelihood</li>
-        </ul>
+    st.markdown(f"<h3 style='color:{prussian_red};'>How?</h3>", unsafe_allow_html=True)
+    st.write("""
+    We built a model using:
+    - Financial ratios like ROA, Debt-to-Equity, Interest Coverage, etc.
+    - Industry dummy variables for 10 industries
+    - Logistic regression combining both features to predict 5-year bankruptcy likelihood
+    """)
 
-        <br><br>
-        <b>Expanded form:</b><br>
-        <div style="font-size:20px;"> 
-        z = Σ(αᵢ × industryᵢ) + Σ(βⱼ × ratioⱼ)
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    st.markdown("Expanded Form of Model:")
+    st.latex(r"""
+    z = \sum_{i=1}^{10} \alpha_i \cdot industry_i + \sum_{j=1}^{8} \beta_j \cdot ratio_j
+    """)
+    st.markdown("Model trained as of **April 25, 2025**.")
 
-    st.write("**Model trained as of April 25, 2025.**")
     st.markdown("---")
-    st.markdown("🔗 [GitHub Repository Link Here](github.com/myashaswi/BankruptcyPredictionApp/)")
+    st.markdown("🔗 [GitHub Repository for this App](https://github.com/myashaswi/BankruptcyPredictionApp/)")
 
-# ----------- PAGE 2: Bankruptcy Prediction Based on Ticker ----------- #
 elif page.startswith("2"):
     st.title("Bankruptcy Risk Prediction")
 
@@ -73,68 +74,91 @@ elif page.startswith("2"):
     if ticker:
         try:
             stock = yf.Ticker(ticker)
+
+            # Fetch required financials
+            fin = stock.financials
             bs = stock.balance_sheet
-            fs = stock.financials
+            cf = stock.cashflow
             info = stock.info
 
-            required_fields = [
-                'Total Assets', 'Total Current Assets', 'Gross PPE', 'Accounts Receivable',
-                'Total Revenue', 'Operating Cash Flow', 'Net Income From Continuing Operations', 'Total Debt'
-            ]
+            data = {}
 
-            if not all(field in bs.index for field in required_fields[:4]) or not all(field in fs.index for field in required_fields[4:]):
-                raise ValueError("Missing critical financial fields. Cannot compute ratios.")
+            # Extracting required fields
+            try:
+                data["current_assets"] = bs.loc["Total Current Assets"].iloc[0]
+                data["current_liabilities"] = bs.loc["Total Current Liabilities"].iloc[0]
+                data["total_assets"] = bs.loc["Total Assets"].iloc[0]
+                data["total_debt"] = bs.loc["Total Debt"].iloc[0]
+                data["ebit"] = fin.loc["EBIT"].iloc[0]
+                data["net_income"] = fin.loc["Net Income"].iloc[0]
+                data["ocf"] = cf.loc["Total Cash From Operating Activities"].iloc[0]
+                data["accounts_receivable"] = bs.loc["Accounts Receivable"].iloc[0]
+                data["gross_ppe"] = bs.loc["Gross Property Plant Equipment"].iloc[0]
+                data["revenue"] = fin.loc["Total Revenue"].iloc[0]
+            except Exception as e:
+                st.error(f"Error fetching data for {ticker}. Details: {e}")
+                st.stop()
 
-            # Ratios
-            working_capital_ratio = ((bs.loc['Total Current Assets'] - (bs.loc['Total Assets'] - bs.loc['Total Current Assets'])) / bs.loc['Total Assets']).iloc[0]
-            roa = (fs.loc['Net Income From Continuing Operations'] / bs.loc['Total Assets']).iloc[0]
-            ebit_to_assets = (fs.loc['Operating Cash Flow'] / bs.loc['Total Assets']).iloc[0]
-            debt_to_equity = (bs.loc['Total Debt'] / (bs.loc['Total Assets'] - bs.loc['Total Debt'])).iloc[0]
-            interest_coverage = (fs.loc['Operating Cash Flow'] / (fs.loc['Operating Cash Flow'] - fs.loc['Net Income From Continuing Operations'])).iloc[0]
-            ocf_to_debt = (fs.loc['Operating Cash Flow'] / bs.loc['Total Debt']).iloc[0]
-            receivables_turnover = (fs.loc['Total Revenue'] / bs.loc['Accounts Receivable']).iloc[0]
-            payables_turnover_days = (bs.loc['Total Assets'] / bs.loc['Gross PPE']).iloc[0]
+            # Calculate Ratios
+            try:
+                ratios = {}
+                ratios['working_capital_ratio'] = (data["current_assets"] - data["current_liabilities"]) / data["total_assets"]
+                ratios['roa'] = data["net_income"] / data["total_assets"]
+                ratios['ebit_to_assets'] = data["ebit"] / data["total_assets"]
+                ratios['debt_to_equity'] = data["total_debt"] / (data["total_assets"] - data["total_debt"])
+                ratios['interest_coverage'] = data["ebit"] / (data["total_debt"] * 0.05)  # Approx 5% cost
+                ratios['ocf_to_debt'] = data["ocf"] / data["total_debt"]
+                ratios['receivables_turnover'] = data["revenue"] / data["accounts_receivable"]
+                ratios['payables_turnover_days'] = 365 / (data["revenue"] / (data["total_assets"] - data["gross_ppe"]))
 
-            input_ratios = pd.DataFrame([[
-                working_capital_ratio, roa, ebit_to_assets, debt_to_equity,
-                interest_coverage, ocf_to_debt, receivables_turnover, payables_turnover_days
-            ]], columns=[
-                'working_capital_ratio', 'roa', 'ebit_to_assets', 'debt_to_equity',
-                'interest_coverage', 'ocf_to_debt', 'receivables_turnover', 'payables_turnover_days'
-            ])
+                # Prepare dataframe
+                input_df = pd.DataFrame([ratios])
 
-            st.subheader("Fetched Financial Data:")
-            st.write(f"**Company:** {info.get('longName', 'Unknown')}")
-            st.write(f"**Industry:** {info.get('industry', 'Unknown')}")
+                st.subheader("Fetched Financial Data:")
+                st.write(f"**Company:** {info.get('longName', 'N/A')}")
+                st.write(f"**Industry:** {info.get('industry', 'N/A')}")
+                st.subheader("Input Ratios:")
+                st.dataframe(input_df)
 
-            st.subheader("Input Ratios:")
-            st.dataframe(input_ratios)
+                # Scaling and Prediction
+                scaled = scaler.transform(input_df)
+                pred = model.predict_proba(scaled)[0][1]
 
-            # Scaling and prediction
-            input_scaled = scaler.transform(input_ratios)
-            prediction = model.predict_proba(input_scaled)[0][1]
+                pred_percent = pred * 100
 
-            st.subheader("Prediction:")
-            color = "#c95c5d" if prediction >= 0.5 else "green"
-            st.markdown(
-                f"<h2 style='color:{color};'>{'High' if prediction >= 0.5 else 'Low'} Bankruptcy Risk ({prediction*100:.2f}%)</h2>",
-                unsafe_allow_html=True
-            )
+                # Plot gauge
+                fig = go.Figure(go.Indicator(
+                    mode="gauge+number",
+                    value=pred_percent,
+                    title={'text': "Bankruptcy Probability"},
+                    gauge={
+                        'axis': {'range': [0, 100]},
+                        'bar': {'color': prussian_red},
+                        'steps': [
+                            {'range': [0, 30], 'color': "lightgreen"},
+                            {'range': [30, 70], 'color': "yellow"},
+                            {'range': [70, 100], 'color': "red"}
+                        ],
+                    }
+                ))
+                st.plotly_chart(fig, use_container_width=True)
 
-        except Exception as e:
-            st.error(f"Error processing data for {ticker}. Details: {str(e)}")
+            except Exception as e:
+                st.error(f"Error processing financial ratios for {ticker}. Details: {e}")
 
-# ----------- PAGE 3: Model Training Code ----------- #
+# ----------- PAGE 3: Model Training Code (Model.ipynb) ----------- #
 elif page.startswith("3"):
-    st.title("Model Training Code (Model.ipynb)")
+    st.title("Model Training Code (From Model.ipynb)")
 
-    with open("Model.ipynb", "r") as f:
-        content = f.read()
+    try:
+        with open("Model.ipynb", "r") as f:
+            content = f.read()
+        st.code(content, language="json")  # Display raw .ipynb file
+    except Exception as e:
+        st.error(f"Could not load Model.ipynb. Error: {e}")
 
-    st.code(content, language="json")  # because .ipynb is JSON structured
-
-# ----------- PAGE 5: Full Streamlit App Code ----------- #
-elif page.startswith("5"):
+# ----------- PAGE 4: Full Streamlit App Code (This file) ----------- #
+elif page.startswith("4"):
     st.title("Full Streamlit App Code")
 
     try:
@@ -142,46 +166,67 @@ elif page.startswith("5"):
             code = f.read()
         st.code(code, language="python")
     except Exception as e:
-        st.error(f"Unable to load code: {e}")
+        st.error(f"Could not load streamlit_app.py. Error: {e}")
 
-# ----------- PAGE 6: Manually Enter Data ----------- #
-elif page.startswith("6"):
-    st.title("Manual Entry of Financial Ratios")
+# ----------- PAGE 5: Manually Enter Data ----------- #
+elif page.startswith("5"):
+    st.title("Manually Enter Financial Ratios")
 
-    st.markdown("Fill the below values to manually predict bankruptcy:")
+    st.markdown(
+        f"<h3 style='color:{prussian_red};'>Enter the following 8 ratios manually:</h3>",
+        unsafe_allow_html=True
+    )
 
     col1, col2 = st.columns(2)
 
     with col1:
-        working_capital_ratio = st.number_input("Working Capital Ratio")
-        roa = st.number_input("Return on Assets (ROA)")
-        ebit_to_assets = st.number_input("EBIT to Assets")
-        debt_to_equity = st.number_input("Debt to Equity Ratio")
+        working_capital_ratio = st.number_input("Working Capital Ratio", step=0.01)
+        roa = st.number_input("Return on Assets (ROA)", step=0.01)
+        ebit_to_assets = st.number_input("EBIT to Assets", step=0.01)
+        debt_to_equity = st.number_input("Debt to Equity Ratio", step=0.01)
 
     with col2:
-        interest_coverage = st.number_input("Interest Coverage")
-        ocf_to_debt = st.number_input("Operating Cash Flow to Debt")
-        receivables_turnover = st.number_input("Receivables Turnover")
-        payables_turnover_days = st.number_input("Payables Turnover Days")
+        interest_coverage = st.number_input("Interest Coverage", step=0.01)
+        ocf_to_debt = st.number_input("Operating Cash Flow to Debt", step=0.01)
+        receivables_turnover = st.number_input("Receivables Turnover", step=0.01)
+        payables_turnover_days = st.number_input("Payables Turnover Days", step=0.01)
 
     if st.button("Predict Bankruptcy Risk"):
         try:
-            manual_input = pd.DataFrame([[
-                working_capital_ratio, roa, ebit_to_assets, debt_to_equity,
-                interest_coverage, ocf_to_debt, receivables_turnover, payables_turnover_days
+            manual_ratios = pd.DataFrame([[
+                working_capital_ratio,
+                roa,
+                ebit_to_assets,
+                debt_to_equity,
+                interest_coverage,
+                ocf_to_debt,
+                receivables_turnover,
+                payables_turnover_days
             ]], columns=[
                 'working_capital_ratio', 'roa', 'ebit_to_assets', 'debt_to_equity',
                 'interest_coverage', 'ocf_to_debt', 'receivables_turnover', 'payables_turnover_days'
             ])
 
-            scaled_manual = scaler.transform(manual_input)
+            scaled_manual = scaler.transform(manual_ratios)
             prediction_manual = model.predict_proba(scaled_manual)[0][1]
 
-            color = "#c95c5d" if prediction_manual >= 0.5 else "green"
-            st.markdown(
-                f"<h2 style='color:{color};'>{'High' if prediction_manual >= 0.5 else 'Low'} Bankruptcy Risk ({prediction_manual*100:.2f}%)</h2>",
-                unsafe_allow_html=True
-            )
+            pred_percent_manual = prediction_manual * 100
+
+            fig_manual = go.Figure(go.Indicator(
+                mode="gauge+number",
+                value=pred_percent_manual,
+                title={'text': "Bankruptcy Probability"},
+                gauge={
+                    'axis': {'range': [0, 100]},
+                    'bar': {'color': prussian_red},
+                    'steps': [
+                        {'range': [0, 30], 'color': "lightgreen"},
+                        {'range': [30, 70], 'color': "yellow"},
+                        {'range': [70, 100], 'color': "red"}
+                    ],
+                }
+            ))
+            st.plotly_chart(fig_manual, use_container_width=True)
 
         except Exception as e:
-            st.error(f"Error in prediction: {e}")
+            st.error(f"Prediction failed. Error: {e}")
