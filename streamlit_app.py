@@ -35,12 +35,12 @@ st.set_page_config(
 
 # Sidebar navigation
 tabs = [
-    "1️⃣ About this App",
-    "2️⃣ Bankruptcy Prediction Based on Ticker",
-    "3️⃣ Model Training Code",
-    "4️⃣ Parameters of Trained Model",
-    "5️⃣ Full Streamlit App Code",
-    "6️⃣ Manually Enter Data"
+    "1. About this App",
+    "2. Bankruptcy Prediction Based on Ticker",
+    "3. Model Training Code",
+    "4. Parameters of Trained Model",
+    "5. Full Streamlit App Code",
+    "6. Manually Enter Data"
 ]
 
 selected_tab = st.sidebar.radio("Navigation - Go to:", tabs)
@@ -191,7 +191,9 @@ elif selected_tab == "4️⃣ Parameters of Trained Model":
 # ---------------------- Tab 5: Full Streamlit App Code ----------------------
 elif selected_tab == "5️⃣ Full Streamlit App Code":
     st.title("Full Streamlit App Code")
-    st.write("ABC")
+    st.write("with open("streamlit_app.py", "r") as f:
+    code = f.read()
+st.code(code, language="python")")
 
 # ---------------------- Tab 6: Manually Enter Data ----------------------
 elif selected_tab == "6️⃣ Manually Enter Data":
