@@ -25,8 +25,8 @@ page = st.sidebar.radio(
         "1 About this App",
         "2 Bankruptcy Prediction Based on Ticker",
         "3 Model Training Code",
-        "5 Full Streamlit App Code",
-        "6 Manually Enter Data"
+        "4 Full Streamlit App Code",
+        "5 Manually Enter Data"
     ]
 )
 
