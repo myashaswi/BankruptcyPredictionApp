@@ -3,12 +3,16 @@ import pandas as pd
 import numpy as np
 import yfinance as yf
 import plotly.graph_objects as go
-import pickle
 import joblib
 
-# Load model and scaler
-model = pickle.load(open("model.pkl", "rb"))
-scaler = joblib.load("scaler.pkl")
+# Load model and scaler using joblib
+try:
+    model = joblib.load("model.pkl")
+    scaler = joblib.load("scaler.pkl")
+except Exception as e:
+    st.error(f"Error loading model or scaler: {e}")
+    model = None
+    scaler = None
 
 # Set page configuration
 st.set_page_config(page_title="Bankruptcy Prediction App", layout="wide")
@@ -17,7 +21,7 @@ st.set_page_config(page_title="Bankruptcy Prediction App", layout="wide")
 page = st.sidebar.radio("Navigation - Go to:", [
     "1 About this App",
     "2 Bankruptcy Prediction Based on Ticker",
-    "3 Model Training Code",
+    "3 Model Training Code", 
     "4 Full Streamlit App Code",
     "5 Manually Enter Data"
 ])
@@ -54,88 +58,123 @@ elif page.startswith("2"):
 
     ticker = st.text_input("Enter Stock Ticker (example: AAPL, MSFT, NVDA)").upper()
 
-    if ticker:
+    if ticker and model is not None and scaler is not None:
         try:
+            # Add debug information
+            st.write(f"Fetching data for {ticker}...")
+            
             stock = yf.Ticker(ticker)
             info = stock.info
             fin = stock.financials
             bs = stock.balance_sheet
             cf = stock.cashflow
 
-            # Fetch financials smartly
+            st.write("Financial data fetched successfully!")
+            
+            # Create a dictionary to store our ratios
             ratios = {}
 
+            # Try/except blocks for each ratio calculation
             try:
-                ratios['working_capital_ratio'] = (bs.loc['Total Current Assets'][0] - bs.loc['Total Current Liabilities'][0]) / bs.loc['Total Assets'][0]
-            except:
-                ratios['working_capital_ratio'] = np.nan
+                ratios['working_capital_ratio'] = float((bs.loc['Total Current Assets'][0] - bs.loc['Total Current Liabilities'][0]) / bs.loc['Total Assets'][0])
+            except Exception as e:
+                st.write(f"Working capital ratio calculation error: {e}")
+                ratios['working_capital_ratio'] = 0.0
 
             try:
-                ratios['roa'] = fin.loc['Net Income'][0] / bs.loc['Total Assets'][0]
-            except:
-                ratios['roa'] = np.nan
+                ratios['roa'] = float(fin.loc['Net Income'][0] / bs.loc['Total Assets'][0])
+            except Exception as e:
+                st.write(f"ROA calculation error: {e}")
+                ratios['roa'] = 0.0
 
             try:
-                ratios['ebit_to_assets'] = fin.loc['EBIT'][0] / bs.loc['Total Assets'][0]
-            except:
-                ratios['ebit_to_assets'] = np.nan
+                ratios['ebit_to_assets'] = float(fin.loc['EBIT'][0] / bs.loc['Total Assets'][0])
+            except Exception as e:
+                st.write(f"EBIT to assets calculation error: {e}")
+                ratios['ebit_to_assets'] = 0.0
 
             try:
-                ratios['debt_to_equity'] = bs.loc['Total Debt'][0] / (bs.loc['Total Assets'][0] - bs.loc['Total Debt'][0])
-            except:
-                ratios['debt_to_equity'] = np.nan
+                ratios['debt_to_equity'] = float(bs.loc['Total Debt'][0] / (bs.loc['Total Assets'][0] - bs.loc['Total Debt'][0]))
+            except Exception as e:
+                st.write(f"Debt to equity calculation error: {e}")
+                ratios['debt_to_equity'] = 0.0
 
             try:
-                ratios['interest_coverage'] = fin.loc['EBIT'][0] / (fin.loc['Interest Expense'][0])
-            except:
-                ratios['interest_coverage'] = np.nan
+                ratios['interest_coverage'] = float(fin.loc['EBIT'][0] / fin.loc['Interest Expense'][0])
+            except Exception as e:
+                st.write(f"Interest coverage calculation error: {e}")
+                ratios['interest_coverage'] = 0.0
 
             try:
-                ratios['ocf_to_debt'] = cf.loc['Total Cash From Operating Activities'][0] / bs.loc['Total Debt'][0]
-            except:
-                ratios['ocf_to_debt'] = np.nan
+                ratios['ocf_to_debt'] = float(cf.loc['Total Cash From Operating Activities'][0] / bs.loc['Total Debt'][0])
+            except Exception as e:
+                st.write(f"OCF to debt calculation error: {e}")
+                ratios['ocf_to_debt'] = 0.0
 
             try:
-                ratios['receivables_turnover'] = fin.loc['Total Revenue'][0] / bs.loc['Accounts Receivable'][0]
-            except:
-                ratios['receivables_turnover'] = np.nan
+                ratios['receivables_turnover'] = float(fin.loc['Total Revenue'][0] / bs.loc['Accounts Receivable'][0])
+            except Exception as e:
+                st.write(f"Receivables turnover calculation error: {e}")
+                ratios['receivables_turnover'] = 0.0
 
             try:
-                ratios['payables_turnover_days'] = (bs.loc['Accounts Payable'][0] / fin.loc['Cost Of Revenue'][0]) * 365
-            except:
-                ratios['payables_turnover_days'] = np.nan
+                ratios['payables_turnover_days'] = float((bs.loc['Accounts Payable'][0] / fin.loc['Cost Of Revenue'][0]) * 365)
+            except Exception as e:
+                st.write(f"Payables turnover days calculation error: {e}")
+                ratios['payables_turnover_days'] = 0.0
 
+            # Create DataFrame from ratios dictionary
             input_df = pd.DataFrame([ratios])
-
+            
+            # Debugging: Check what's in the input_df
             st.subheader("Input Ratios Used:")
             st.dataframe(input_df)
-
+            
             # Check for too many NaNs
             if input_df.isnull().mean().mean() > 0.5:
                 st.warning("⚠️ Insufficient financial data to predict bankruptcy risk for this company.")
             else:
+                # Fill any remaining NaNs with zeros
                 input_df = input_df.fillna(0)
+                
+                # Ensure all columns match the expected order
+                expected_cols = ['working_capital_ratio', 'roa', 'ebit_to_assets', 'debt_to_equity',
+                                 'interest_coverage', 'ocf_to_debt', 'receivables_turnover', 'payables_turnover_days']
+                input_df = input_df.reindex(columns=expected_cols, fill_value=0)
+                
+                # Scale the input data
                 scaled = scaler.transform(input_df)
-
-                pred = model.predict_proba(scaled)[0][1]
-                pred_percent = pred * 100
-
-                # Plot Gauge Chart
-                fig = go.Figure(go.Indicator(
-                    mode="gauge+number",
-                    value=pred_percent,
-                    title={'text': "Bankruptcy Probability"},
-                    gauge={
-                        'axis': {'range': [0, 100]},
-                        'bar': {'color': prussian_red},
-                        'steps': [
-                            {'range': [0, 30], 'color': "lightgreen"},
-                            {'range': [30, 70], 'color': "yellow"},
-                            {'range': [70, 100], 'color': "red"}
-                        ],
-                    }
-                ))
-                st.plotly_chart(fig, use_container_width=True)
+                
+                st.write("Data scaled successfully!")
+                
+                # Use the model to predict
+                try:
+                    pred = model.predict_proba(scaled)[0][1]
+                    pred_percent = pred * 100
+                    
+                    st.write(f"Raw prediction probability: {pred}")
+                    
+                    # Plot Gauge Chart
+                    fig = go.Figure(go.Indicator(
+                        mode="gauge+number",
+                        value=pred_percent,
+                        title={'text': "Bankruptcy Probability"},
+                        gauge={
+                            'axis': {'range': [0, 100]},
+                            'bar': {'color': prussian_red},
+                            'steps': [
+                                {'range': [0, 30], 'color': "lightgreen"},
+                                {'range': [30, 70], 'color': "yellow"},
+                                {'range': [70, 100], 'color': "red"}
+                            ],
+                        }
+                    ))
+                    st.plotly_chart(fig, use_container_width=True)
+                    
+                except Exception as e:
+                    st.error(f"Prediction error: {e}")
+                    st.write("Model type:", type(model))
+                    st.write("Model attributes:", dir(model))
 
         except Exception as e:
             st.error(f"Failed to fetch data or predict. Error: {e}")
@@ -180,7 +219,7 @@ elif page.startswith("5"):
         receivables_turnover = st.number_input("Receivables Turnover", step=0.01)
         payables_turnover_days = st.number_input("Payables Turnover Days", step=0.01)
 
-    if st.button("Predict Bankruptcy Risk"):
+    if st.button("Predict Bankruptcy Risk") and model is not None and scaler is not None:
         try:
             manual_ratios = pd.DataFrame([[
                 working_capital_ratio, roa, ebit_to_assets, debt_to_equity,
