@@ -86,7 +86,7 @@ if selected_tab == "1️⃣ About this App":
 
     st.markdown(f"**Model trained as of {datetime(2025, 4, 25).strftime('%B %d, %Y')}.**")
 
-    st.markdown("**Link to GitHub repository:** [Paste your GitHub link here once available!]")
+    st.markdown("**Link to GitHub repository:** [https://github.com/myashaswi/BankruptcyPredictionApp]")
 
 # ---------------------- Tab 2: Bankruptcy Prediction ----------------------
 elif selected_tab == "2️⃣ Bankruptcy Prediction Based on Ticker":
