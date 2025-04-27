@@ -16,7 +16,7 @@ features = [
 ]
 
 # Set theme colors
-PRUSSIAN_BLUE = "#003153"
+RED = "#FF0000"
 
 # Sidebar Navigation
 st.sidebar.title("Navigation - Go to:")
@@ -35,20 +35,20 @@ page = st.sidebar.radio(
 # 1. About this App
 if page.startswith("1"):
     st.title("Altman Z-Score Inspired Industry-Specific Model")
-    st.markdown(f"<h2 style='color:{PRUSSIAN_BLUE};'>What, How, Why?</h2>", unsafe_allow_html=True)
+    st.markdown(f"<h2 style='color:{RED};'>What, How, Why?</h2>", unsafe_allow_html=True)
 
-    st.markdown(f"<h3 style='color:{PRUSSIAN_BLUE};'>What?</h3>", unsafe_allow_html=True)
+    st.markdown(f"<h3 style='color:{RED};'>What?</h3>", unsafe_allow_html=True)
     st.write(
         "This app predicts bankruptcy risk using a customized logistic regression model, "
         "designed with **industry-specific intercepts** (alphas) and **key financial ratios** (betas)."
     )
 
-    st.markdown(f"<h3 style='color:{PRUSSIAN_BLUE};'>Why?</h3>", unsafe_allow_html=True)
+    st.markdown(f"<h3 style='color:{RED};'>Why?</h3>", unsafe_allow_html=True)
     st.write(
         "Predicting bankruptcy risk early can help prioritize audits, deeper analysis, and proactive financial decisions."
     )
 
-    st.markdown(f"<h3 style='color:{PRUSSIAN_BLUE};'>How?</h3>", unsafe_allow_html=True)
+    st.markdown(f"<h3 style='color:{RED};'>How?</h3>", unsafe_allow_html=True)
     st.write("We built a model using:")
     st.markdown("""
     - Financial ratios like ROA, Debt-to-Equity, Interest Coverage, etc.
@@ -67,7 +67,7 @@ if page.startswith("1"):
 
     st.write("**Model trained as of April 25, 2025.**")
 
-    st.markdown("[Link to GitHub Repository](https://github.com/YOUR_GITHUB_LINK_HERE)", unsafe_allow_html=True)
+    st.markdown("[Link to GitHub Repository](https://github.com/myashaswi/BankruptcyPredictionApp/)", unsafe_allow_html=True)
 
 # 2. Bankruptcy Prediction Based on Ticker
 elif page.startswith("2"):
