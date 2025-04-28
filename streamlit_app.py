@@ -450,6 +450,11 @@ elif page.startswith("2"):
                             if ratios['payables_turnover_days'] > 80:
                                 st.write(f"⚠️ High Payables Turnover Days : {ratios['payables_turnover_days']:.2f}")
                             risk_factors = []  # Initialize an empty list before checking
+                            # === Remove overlaps ===
+                            # If a factor is already positive, remove it from risk_factors
+                            positive_factor_names = [f.split(":")[0].strip() for f in positive_factors]
+                            # Filter risk_factors to exclude those that are positive
+                            risk_factors = [f for f in risk_factors if f.split(":")[0].strip() not in positive_factor_names]
                             if risk_factors :
                                 st.subheader("⚠️ Potential Risk Factors Detected:")
                                 for factor in risk_factors:
