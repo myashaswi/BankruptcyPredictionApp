@@ -471,7 +471,7 @@ elif page.startswith("3"):
     st.title("Model Training Code")
     st.markdown("[Click here to open our full Colab Notebook](https://colab.research.google.com/drive/1yjdS5FEvyKw1rEsMSjnpc3w4jQwdkxIc?usp=sharing)", unsafe_allow_html=True)
 
-    import nbformat
+import nbformat
     
     try:
         with open("Model.ipynb", "r") as f:
