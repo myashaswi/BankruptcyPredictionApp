@@ -323,7 +323,7 @@ elif page.startswith("2"):
                     'Ratio': list(ratios.keys()),
                     'Value': list(ratios.values())
                 })
-                st.dataframe(ratio_display)
+                st.dataframe(display_df)
 
                 pretty_names = {
                 "working_capital_ratio": "Working Capital Ratio",
