@@ -160,51 +160,51 @@ def calculate_financial_ratios(ticker):
             ratios['interest_coverage'] = 0.0
         
 # 6. Operating Cash Flow to Debt - Improved version with better fallbacks
-        try:
+try:
     # Try multiple possible locations for operating cash flow
-                operating_cash_flow = get_value(cf, [
-                'Total Cash From Operating Activities', 
-                'Cash From Operating Activities',
-                'Operating Cash Flow',
-                'Net Cash Provided By Operating Activities'
-            ])
-            
-            # Try multiple possible locations for total debt
-            total_debt = get_value(bs, [
-                'Total Debt', 
-                'Long Term Debt',
-                'Short Long Term Debt'
-            ])
-            
-            # If we can't find total debt directly, try to calculate it
-            if not total_debt:
-                long_term_debt = get_value(bs, ['Long Term Debt'])
-                short_term_debt = get_value(bs, ['Short Term Debt', 'Current Debt'])
-                if long_term_debt or short_term_debt:
-                    total_debt = sum(filter(None, [long_term_debt, short_term_debt]))
-            
-            if operating_cash_flow and total_debt and total_debt != 0:
-                ratios['ocf_to_debt'] = float(operating_cash_flow / total_debt)
-                st.write(f"OCF/Debt ratio calculated: {ratios['ocf_to_debt']:.2f}")  # Debug line
+    operating_cash_flow = get_value(cf, [
+        'Total Cash From Operating Activities', 
+        'Cash From Operating Activities',
+        'Operating Cash Flow',
+        'Net Cash Provided By Operating Activities'
+    ])
+    
+    # Try multiple possible locations for total debt
+    total_debt = get_value(bs, [
+        'Total Debt', 
+        'Long Term Debt',
+        'Short Long Term Debt'
+    ])
+    
+    # If we can't find total debt directly, try to calculate it
+    if not total_debt:
+        long_term_debt = get_value(bs, ['Long Term Debt'])
+        short_term_debt = get_value(bs, ['Short Term Debt', 'Current Debt'])
+        if long_term_debt or short_term_debt:
+            total_debt = sum(filter(None, [long_term_debt, short_term_debt]))
+    
+    if operating_cash_flow and total_debt and total_debt != 0:
+        ratios['ocf_to_debt'] = float(operating_cash_flow / total_debt)
+        st.write(f"OCF/Debt ratio calculated: {ratios['ocf_to_debt']:.2f}")  # Debug line
+    else:
+        # Try alternative calculation if total debt is missing
+        total_liabilities = get_value(bs, ['Total Liabilities', 'Total Liabilities Net Minority Interest'])
+        
+        if operating_cash_flow and total_liabilities and total_liabilities != 0:
+            ratios['ocf_to_debt'] = float(operating_cash_flow / total_liabilities)
+            st.write(f"OCF/Debt ratio calculated using total liabilities: {ratios['ocf_to_debt']:.2f}")  # Debug
+        else:
+            # Last resort: Look at balance sheet for operating cash flow and debt
+            cash_flow_alt = get_value(bs, ['Cash From Operating Activities'])
+            if cash_flow_alt and total_debt and total_debt != 0:
+                ratios['ocf_to_debt'] = float(cash_flow_alt / total_debt)
             else:
-                # Try alternative calculation if total debt is missing
-                total_liabilities = get_value(bs, ['Total Liabilities', 'Total Liabilities Net Minority Interest'])
-                
-                if operating_cash_flow and total_liabilities and total_liabilities != 0:
-                    ratios['ocf_to_debt'] = float(operating_cash_flow / total_liabilities)
-                    st.write(f"OCF/Debt ratio calculated using total liabilities: {ratios['ocf_to_debt']:.2f}")  # Debug
-                else:
-                    # Last resort: Look at balance sheet for operating cash flow and debt
-                    cash_flow_alt = get_value(bs, ['Cash From Operating Activities'])
-                    if cash_flow_alt and total_debt and total_debt != 0:
-                        ratios['ocf_to_debt'] = float(cash_flow_alt / total_debt)
-                    else:
-                        # Default to a moderate value instead of zero
-                        ratios['ocf_to_debt'] = 0.2  # Default to a moderate value
-                        st.write("Using default OCF/Debt value")  # Debug
-        except Exception as e:
-            st.write(f"OCF to debt calculation error: {e}")
-            ratios['ocf_to_debt'] = 0.2  # Use a moderate default rather than zero
+                # Default to a moderate value instead of zero
+                ratios['ocf_to_debt'] = 0.2  # Default to a moderate value
+                st.write("Using default OCF/Debt value")  # Debug
+except Exception as e:
+    st.write(f"OCF to debt calculation error: {e}")
+    ratios['ocf_to_debt'] = 0.2  # Use a moderate default rather than zero
     
         # 7. Receivables Turnover
         try:
