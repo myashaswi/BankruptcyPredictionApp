@@ -330,8 +330,8 @@ elif page.startswith("2"):
                     st.warning("⚠️ Insufficient financial data for reliable prediction.")
                 
                 # Ensure all required columns are present
-                expected_cols = ['Working Capital Ratio', 'Return on Assets', 'EBIT to Assets', 'Debt to Equity',
-                                'Interest Coverage', 'Operating Cash Flows to Debt', 'Receivables Turnover', 'Payables Turnover Days']
+                expected_cols = ['working_capital_ratio', 'roa', 'ebit_to_assets', 'debt_to_equity',
+                                'interest_coverage', 'ocf_to_debt', 'receivables_turnover', 'payables_turnover_days']
                 for col in expected_cols:
                     if col not in ratios:
                         ratios[col] = 0
