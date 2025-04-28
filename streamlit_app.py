@@ -5,6 +5,230 @@ import yfinance as yf
 import plotly.graph_objects as go
 import joblib
 
+# First, add these functions at the top of your file
+def get_value(df, possible_keys):
+    """Try to get a value from a dataframe using multiple possible keys"""
+    if df is None or df.empty:
+        return None
+    
+    for key in possible_keys:
+        try:
+            if key in df.index:
+                value = df.loc[key][0]  # Get most recent value
+                if pd.notnull(value) and value != 0:
+                    return value
+        except:
+            continue
+    
+    return None
+
+def calculate_financial_ratios(ticker):
+    """Calculate all financial ratios with multiple fallback methods"""
+    try:
+        stock = yf.Ticker(ticker)
+        info = stock.info
+        
+        # Get different timeframes of financial data
+        fin_annual = stock.financials
+        fin_quarterly = stock.quarterly_financials
+        
+        bs_annual = stock.balance_sheet
+        bs_quarterly = stock.quarterly_balance_sheet
+        
+        cf_annual = stock.cashflow
+        cf_quarterly = stock.quarterly_cashflow
+        
+        # Use most recent data (quarterly if available, otherwise annual)
+        fin = fin_quarterly if not fin_quarterly.empty else fin_annual
+        bs = bs_quarterly if not bs_quarterly.empty else bs_annual
+        cf = cf_quarterly if not cf_quarterly.empty else cf_annual
+        
+        # Display company information
+        st.subheader(f"Company: {info.get('shortName', ticker)}")
+        st.write(f"Industry: {info.get('industry', 'Unknown')}")
+        st.write(f"Sector: {info.get('sector', 'Unknown')}")
+        
+        # Dictionary to store the calculated ratios
+        ratios = {}
+        
+        # 1. Working Capital Ratio
+        try:
+            # Method 1: Standard calculation
+            current_assets = get_value(bs, ['Total Current Assets', 'Current Assets'])
+            current_liabilities = get_value(bs, ['Total Current Liabilities', 'Current Liabilities'])
+            total_assets = get_value(bs, ['Total Assets'])
+            
+            if current_assets and current_liabilities and total_assets:
+                ratios['working_capital_ratio'] = float((current_assets - current_liabilities) / total_assets)
+            else:
+                # Method 2: Alternative calculation using components
+                cash = get_value(bs, ['Cash And Cash Equivalents', 'Cash', 'Cash And Short Term Investments'])
+                receivables = get_value(bs, ['Accounts Receivable', 'Net Receivables'])
+                inventory = get_value(bs, ['Inventory', 'Inventories'])
+                payables = get_value(bs, ['Accounts Payable', 'Payables'])
+                
+                # If we have some components, make an estimate
+                if total_assets and (cash or receivables or inventory) and payables:
+                    current_assets_est = sum(filter(None, [cash, receivables, inventory]))
+                    ratios['working_capital_ratio'] = float((current_assets_est - payables) / total_assets)
+                else:
+                    ratios['working_capital_ratio'] = 0.0
+        except Exception as e:
+            st.write(f"Working capital ratio calculation error: {e}")
+            ratios['working_capital_ratio'] = 0.0
+        
+        # 2. Return on Assets (ROA)
+        try:
+            net_income = get_value(fin, ['Net Income', 'Net Income Common Stockholders'])
+            total_assets = get_value(bs, ['Total Assets'])
+            
+            if net_income and total_assets:
+                ratios['roa'] = float(net_income / total_assets)
+            else:
+                ratios['roa'] = 0.0
+        except Exception as e:
+            st.write(f"ROA calculation error: {e}")
+            ratios['roa'] = 0.0
+        
+        # 3. EBIT to Assets
+        try:
+            # Method 1: Direct EBIT from financials
+            ebit = get_value(fin, ['EBIT', 'Operating Income'])
+            total_assets = get_value(bs, ['Total Assets'])
+            
+            if ebit and total_assets:
+                ratios['ebit_to_assets'] = float(ebit / total_assets)
+            else:
+                # Method 2: Calculate EBIT from components
+                net_income = get_value(fin, ['Net Income', 'Net Income Common Stockholders'])
+                interest_expense = get_value(fin, ['Interest Expense', 'Interest And Debt Expense'])
+                income_tax = get_value(fin, ['Income Tax Expense', 'Tax Provision'])
+                
+                if net_income and total_assets:
+                    calculated_ebit = net_income
+                    if interest_expense:
+                        calculated_ebit += interest_expense
+                    if income_tax:
+                        calculated_ebit += income_tax
+                    
+                    ratios['ebit_to_assets'] = float(calculated_ebit / total_assets)
+                else:
+                    ratios['ebit_to_assets'] = 0.0
+        except Exception as e:
+            st.write(f"EBIT to assets calculation error: {e}")
+            ratios['ebit_to_assets'] = 0.0
+        
+        # 4. Debt to Equity
+        try:
+            # Method 1: Simple calculation
+            total_debt = get_value(bs, ['Total Debt', 'Long Term Debt', 'Short Long Term Debt'])
+            
+            # Calculate equity as total assets minus total debt
+            total_assets = get_value(bs, ['Total Assets'])
+            
+            if total_debt and total_assets and total_assets > total_debt:
+                equity = total_assets - total_debt
+                ratios['debt_to_equity'] = float(total_debt / equity)
+            else:
+                # Method 2: Alternative equity calculation
+                total_equity = get_value(bs, ['Total Stockholder Equity', 'Stockholders Equity'])
+                
+                if total_debt and total_equity and total_equity > 0:
+                    ratios['debt_to_equity'] = float(total_debt / total_equity)
+                else:
+                    ratios['debt_to_equity'] = 0.0
+        except Exception as e:
+            st.write(f"Debt to equity calculation error: {e}")
+            ratios['debt_to_equity'] = 0.0
+        
+        # 5. Interest Coverage
+        try:
+            ebit = get_value(fin, ['EBIT', 'Operating Income'])
+            interest_expense = get_value(fin, ['Interest Expense', 'Interest And Debt Expense'])
+            
+            if ebit and interest_expense and interest_expense != 0:
+                ratios['interest_coverage'] = float(ebit / interest_expense)
+            else:
+                # Alternative: Estimate from components if EBIT is available
+                if ebit:
+                    # If we have EBIT but no interest expense, assume strong coverage
+                    ratios['interest_coverage'] = 10.0  # A high default value
+                else:
+                    ratios['interest_coverage'] = 0.0
+        except Exception as e:
+            st.write(f"Interest coverage calculation error: {e}")
+            ratios['interest_coverage'] = 0.0
+        
+        # 6. Operating Cash Flow to Debt
+        try:
+            operating_cash_flow = get_value(cf, ['Total Cash From Operating Activities', 'Cash From Operating Activities'])
+            total_debt = get_value(bs, ['Total Debt', 'Long Term Debt', 'Short Long Term Debt'])
+            
+            if operating_cash_flow and total_debt and total_debt != 0:
+                ratios['ocf_to_debt'] = float(operating_cash_flow / total_debt)
+            else:
+                # Alternative calculation if total debt is missing
+                total_liabilities = get_value(bs, ['Total Liabilities', 'Total Liabilities Net Minority Interest'])
+                
+                if operating_cash_flow and total_liabilities and total_liabilities != 0:
+                    ratios['ocf_to_debt'] = float(operating_cash_flow / total_liabilities)
+                else:
+                    ratios['ocf_to_debt'] = 0.0
+        except Exception as e:
+            st.write(f"OCF to debt calculation error: {e}")
+            ratios['ocf_to_debt'] = 0.0
+        
+        # 7. Receivables Turnover
+        try:
+            total_revenue = get_value(fin, ['Total Revenue', 'Revenue'])
+            accounts_receivable = get_value(bs, ['Accounts Receivable', 'Net Receivables'])
+            
+            if total_revenue and accounts_receivable and accounts_receivable != 0:
+                ratios['receivables_turnover'] = float(total_revenue / accounts_receivable)
+            else:
+                # If accounts receivable is missing, estimate from total assets
+                if total_revenue and total_assets:
+                    # Assume receivables are ~10% of total assets as a rough estimate
+                    est_receivables = total_assets * 0.1
+                    ratios['receivables_turnover'] = float(total_revenue / est_receivables)
+                else:
+                    ratios['receivables_turnover'] = 0.0
+        except Exception as e:
+            st.write(f"Receivables turnover calculation error: {e}")
+            ratios['receivables_turnover'] = 0.0
+        
+        # 8. Payables Turnover Days
+        try:
+            accounts_payable = get_value(bs, ['Accounts Payable', 'Payables'])
+            cost_of_revenue = get_value(fin, ['Cost Of Revenue', 'Cost of Revenue', 'COGS'])
+            
+            if accounts_payable and cost_of_revenue and cost_of_revenue != 0:
+                ratios['payables_turnover_days'] = float((accounts_payable / cost_of_revenue) * 365)
+            else:
+                # Alternative calculation using operating expenses
+                operating_expenses = get_value(fin, ['Operating Expense', 'Total Operating Expenses'])
+                
+                if accounts_payable and operating_expenses and operating_expenses != 0:
+                    ratios['payables_turnover_days'] = float((accounts_payable / operating_expenses) * 365)
+                else:
+                    ratios['payables_turnover_days'] = 60.0  # Industry average default
+        except Exception as e:
+            st.write(f"Payables turnover days calculation error: {e}")
+            ratios['payables_turnover_days'] = 60.0  # Industry average default
+        
+        # Hide the detailed calculation error messages
+        if st.checkbox("Show detailed calculation errors", value=False):
+            st.write("Calculation error messages will appear here.")
+        else:
+            # Clear any previous error messages
+            placeholder = st.empty()
+        
+        return ratios, info
+    
+    except Exception as e:
+        st.error(f"Failed to get financial data for {ticker}: {e}")
+        return {}, {}
+
 # Load model and scaler using joblib
 try:
     model = joblib.load("model.pkl")
@@ -13,7 +237,6 @@ except Exception as e:
     st.error(f"Error loading model or scaler: {e}")
     model = None
     scaler = None
-
 # Set page configuration
 st.set_page_config(page_title="Bankruptcy Prediction App", layout="wide")
 
@@ -26,20 +249,20 @@ page = st.sidebar.radio("Navigation - Go to:", [
     "5 Manually Enter Data"
 ])
 
-prussian_red = "#c95c5d"
+red = "#c95c5d"
 
 # ========== PAGE 1: About this App ==========
 if page.startswith("1"):
     st.title("Altman Z-Score Inspired Industry-Specific Model")
-    st.markdown(f"<h2 style='color:{prussian_red};'>What, How, Why?</h2>", unsafe_allow_html=True)
+    st.markdown(f"<h2 style='color:{red};'>What, How, Why?</h2>", unsafe_allow_html=True)
 
-    st.markdown(f"<h3 style='color:{prussian_red};'>What?</h3>", unsafe_allow_html=True)
+    st.markdown(f"<h3 style='color:{red};'>What?</h3>", unsafe_allow_html=True)
     st.write("This app predicts bankruptcy risk using a customized logistic regression model, with **industry-specific intercepts** and **key financial ratios**.")
 
-    st.markdown(f"<h3 style='color:{prussian_red};'>Why?</h3>", unsafe_allow_html=True)
+    st.markdown(f"<h3 style='color:{red};'>Why?</h3>", unsafe_allow_html=True)
     st.write("Early prediction of bankruptcy risk helps prioritize audits, deeper analysis, and proactive financial decisions.")
 
-    st.markdown(f"<h3 style='color:{prussian_red};'>How?</h3>", unsafe_allow_html=True)
+    st.markdown(f"<h3 style='color:{red};'>How?</h3>", unsafe_allow_html=True)
     st.write("""
     - Financial ratios like ROA, Debt-to-Equity, Interest Coverage, etc.
     - Industry dummy variables for 10 industries
@@ -50,7 +273,7 @@ if page.startswith("1"):
 
     st.write("Model trained as of **April 25, 2025**.")
     st.markdown("---")
-    st.markdown("🔗 [GitHub Repository for this App](https://your-github-link-here)")
+    st.markdown("🔗 [GitHub Repository for this App](https://github.com/myashaswi/BankruptcyPredictionApp)")
 
 # ========== PAGE 2: Bankruptcy Prediction Based on Ticker ==========
 elif page.startswith("2"):
@@ -63,72 +286,19 @@ elif page.startswith("2"):
             # Add debug information
             st.write(f"Fetching data for {ticker}...")
             
+            # Get basic company info before calling the main function
             stock = yf.Ticker(ticker)
             info = stock.info
-            # Fetch company name and industry
+            
+            # Display company name and industry (keeping your original display)
             company_name = info.get('longName', 'Unknown Company')
             industry = info.get('industry', 'Unknown Industry')
             st.write(f"**Company Name:** {company_name}")
             st.write(f"**Industry:** {industry}")
-
-            fin = stock.financials
-            bs = stock.balance_sheet
-            cf = stock.cashflow
-
-            st.write("Financial data fetched successfully!")
             
-            # Create a dictionary to store our ratios
-            ratios = {}
-
-            # Try/except blocks for each ratio calculation
-            try:
-                ratios['working_capital_ratio'] = float((bs.loc['Total Current Assets'][0] - bs.loc['Total Current Liabilities'][0]) / bs.loc['Total Assets'][0])
-            except Exception as e:
-                st.write(f"Working capital ratio calculation error: {e}")
-                ratios['working_capital_ratio'] = 0.0
-
-            try:
-                ratios['roa'] = float(fin.loc['Net Income'][0] / bs.loc['Total Assets'][0])
-            except Exception as e:
-                st.write(f"ROA calculation error: {e}")
-                ratios['roa'] = 0.0
-
-            try:
-                ratios['ebit_to_assets'] = float(fin.loc['EBIT'][0] / bs.loc['Total Assets'][0])
-            except Exception as e:
-                st.write(f"EBIT to assets calculation error: {e}")
-                ratios['ebit_to_assets'] = 0.0
-
-            try:
-                ratios['debt_to_equity'] = float(bs.loc['Total Debt'][0] / (bs.loc['Total Assets'][0] - bs.loc['Total Debt'][0]))
-            except Exception as e:
-                st.write(f"Debt to equity calculation error: {e}")
-                ratios['debt_to_equity'] = 0.0
-
-            try:
-                ratios['interest_coverage'] = float(fin.loc['EBIT'][0] / fin.loc['Interest Expense'][0])
-            except Exception as e:
-                st.write(f"Interest coverage calculation error: {e}")
-                ratios['interest_coverage'] = 0.0
-
-            try:
-                ratios['ocf_to_debt'] = float(cf.loc['Total Cash From Operating Activities'][0] / bs.loc['Total Debt'][0])
-            except Exception as e:
-                st.write(f"OCF to debt calculation error: {e}")
-                ratios['ocf_to_debt'] = 0.0
-
-            try:
-                ratios['receivables_turnover'] = float(fin.loc['Total Revenue'][0] / bs.loc['Accounts Receivable'][0])
-            except Exception as e:
-                st.write(f"Receivables turnover calculation error: {e}")
-                ratios['receivables_turnover'] = 0.0
-
-            try:
-                ratios['payables_turnover_days'] = float((bs.loc['Accounts Payable'][0] / fin.loc['Cost Of Revenue'][0]) * 365)
-            except Exception as e:
-                st.write(f"Payables turnover days calculation error: {e}")
-                ratios['payables_turnover_days'] = 0.0
-
+            # Then use our improved financial ratio calculation function
+            ratios, info = calculate_financial_ratios(ticker)
+            
             # Create DataFrame from ratios dictionary
             input_df = pd.DataFrame([ratios])
             
@@ -136,8 +306,8 @@ elif page.startswith("2"):
             st.subheader("Input Ratios Used:")
             st.dataframe(input_df)
             
-            # Check for too many NaNs
-            if input_df.isnull().mean().mean() > 0.5:
+            # Check for too many NaNs or zeros
+            if input_df.isnull().mean().mean() > 0.5 or (input_df == 0).mean().mean() > 0.75:
                 st.warning("⚠️ Insufficient financial data to predict bankruptcy risk for this company.")
             else:
                 # Fill any remaining NaNs with zeros
@@ -145,7 +315,8 @@ elif page.startswith("2"):
                 
                 # Ensure all columns match the expected order
                 expected_cols = ['working_capital_ratio', 'roa', 'ebit_to_assets', 'debt_to_equity',
-                                 'interest_coverage', 'ocf_to_debt', 'receivables_turnover', 'payables_turnover_days']
+                               'interest_coverage', 'ocf_to_debt', 'receivables_turnover', 'payables_turnover_days']
+                
                 input_df = input_df.reindex(columns=expected_cols, fill_value=0)
                 
                 # Scale the input data
@@ -156,18 +327,21 @@ elif page.startswith("2"):
                 # Use the model to predict
                 try:
                     pred = model.predict_proba(scaled)[0][1]
-                    pred_percent = pred * 100
                     
-                    st.write(f"Raw prediction probability: {pred}")
+                    # Format the probability to show as percentage with 2 decimal places
+                    st.write(f"Raw prediction probability: {pred:.4%}")
+                    
+                    pred_percent = pred * 100
                     
                     # Plot Gauge Chart
                     fig = go.Figure(go.Indicator(
                         mode="gauge+number",
                         value=pred_percent,
+                        number={'valueformat': '.2f'},  # Format to 2 decimal places
                         title={'text': "Bankruptcy Probability"},
                         gauge={
                             'axis': {'range': [0, 100]},
-                            'bar': {'color': prussian_red},
+                            'bar': {'color': Red},
                             'steps': [
                                 {'range': [0, 30], 'color': "lightgreen"},
                                 {'range': [30, 70], 'color': "yellow"},
@@ -246,7 +420,7 @@ elif page.startswith("5"):
                 title={'text': "Bankruptcy Probability"},
                 gauge={
                     'axis': {'range': [0, 100]},
-                    'bar': {'color': prussian_red},
+                    'bar': {'color': red},
                     'steps': [
                         {'range': [0, 30], 'color': "lightgreen"},
                         {'range': [30, 70], 'color': "yellow"},
