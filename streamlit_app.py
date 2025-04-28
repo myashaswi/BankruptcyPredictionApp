@@ -44,7 +44,7 @@ def calculate_financial_ratios(ticker):
         cf = cf_quarterly if not cf_quarterly.empty else cf_annual
         
         # Display company information
-        st.subheader(f"Company: {info.get('Name', 'Unknown')}")
+        st.subheader(f"Company: {info.get('Name', ticker)}")
         st.write(f"Industry: {info.get('industry', 'Unknown')}")
         st.write(f"Sector: {info.get('sector', 'Unknown')}")
         
