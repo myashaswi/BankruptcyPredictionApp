@@ -336,9 +336,9 @@ elif page.startswith("2"):
                         'payables_turnover_days': 'Payables Turnover Days'
                     }
 
-# Use for display purposes
-display_df = input_df.rename(columns=pretty_names)
-st.dataframe(display_df)
+                # Use for display purposes
+                display_df = input_df.rename(columns=pretty_names)
+                st.dataframe(display_df)
 
                 # Check for too many missing values
                 if sum(v == 0 for v in ratios.values()) > 4:  # If more than half are zeros/missing
