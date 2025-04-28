@@ -285,19 +285,19 @@ elif page.startswith("2"):
         try:
             # Add debug information
             st.write(f"Fetching data for {ticker}...")
-    
-    # Get basic company info before calling the main function
-    stock = yf.Ticker(ticker)
-    info = stock.info
-    
-    # Display company name and industry (keeping your original display)
-    company_name = info.get('longName', 'Unknown Company')
-    industry = info.get('industry', 'Unknown Industry')
-    st.write(f"**Company Name:** {company_name}")
-    st.write(f"**Industry:** {industry}")
-    
-    # Then use our improved financial ratio calculation function
-    ratios, info = calculate_financial_ratios(ticker)
+            
+            # Get basic company info before calling the main function
+            stock = yf.Ticker(ticker)
+            info = stock.info
+            
+            # Display company name and industry (keeping your original display)
+            company_name = info.get('longName', 'Unknown Company')
+            industry = info.get('industry', 'Unknown Industry')
+            st.write(f"**Company Name:** {company_name}")
+            st.write(f"**Industry:** {industry}")
+            
+            # Then use our improved financial ratio calculation function
+            ratios, info = calculate_financial_ratios(ticker)
             
             # Create DataFrame from ratios dictionary
             input_df = pd.DataFrame([ratios])
@@ -358,7 +358,7 @@ elif page.startswith("2"):
 
         except Exception as e:
             st.error(f"Failed to fetch data or predict. Error: {e}")
-
+            
 # ========== PAGE 3: Model Training Code ==========
 elif page.startswith("3"):
     st.title("Model Training Code")
