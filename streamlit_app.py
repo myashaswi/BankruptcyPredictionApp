@@ -434,8 +434,8 @@ elif page.startswith("2"):
                                 st.write(f"⚠️ Working Capital Ratio: {ratios['working_capital_ratio']:.2f}")
                             if ratios['roa'] < 0.02:
                                 st.write(f"⚠️ Return on Assets {ratios['roa']:.2f}")
-                            if ratios['ebit_assets'] < 0.03:
-                                st.write(f"⚠️ EBIT to Assets: {ratios['ebit_assets']:.2f}")
+                            if ratios['ebit_to_assets'] < 0.03:
+                                st.write(f"⚠️ EBIT to Assets: {ratios['ebit_to_assets']:.2f}")
                             if ratios['debt_to_equity'] > 2:
                                 st.write(f"⚠️ Debt to Equity: {ratios['debt_to_equity']:.2f}")
                             if ratios['interest_coverage'] < 2:
