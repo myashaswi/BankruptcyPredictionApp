@@ -493,15 +493,44 @@ elif page.startswith("3"):
 
 # ========== PAGE 4: Full Streamlit App Code ==========
 elif page.startswith("4"):
-    st.title("Full Streamlit App Code")
+    st.title("Full Streamlit App Code (Tab Wise)")
 
+    tab_names = ["Page 1 - About", "Page 2 - Bankruptcy Prediction", 
+                 "Page 3 - Model Training Code", "Page 4 - Full Streamlit App", 
+                 "Page 5 - Manual Data Entry"]
+    
+    selected_tab = st.selectbox("Select Page Code to View", tab_names)
+    
     try:
         with open("streamlit_app.py", "r") as f:
-            code = f.read()
-        st.code(code, language="python")
+            app_code = f.read()
+    
+        # Split by Pages
+        page_sections = app_code.split("# ========== PAGE ")
+        
+        page_dict = {}
+        for section in page_sections:
+            if section.strip():
+                page_number = section[0]
+                page_content = section[1:].strip()
+                page_dict[page_number] = page_content
+    
+        page_number_map = {
+            "Page 1 - About": "1",
+            "Page 2 - Bankruptcy Prediction": "2",
+            "Page 3 - Model Training Code": "3",
+            "Page 4 - Full Streamlit App": "4",
+            "Page 5 - Manual Data Entry": "5"
+        }
+    
+        selected_page_number = page_number_map[selected_tab]
+        if selected_page_number in page_dict:
+            st.code(page_dict[selected_page_number], language="python")
+        else:
+            st.error("Could not find code for this page.")
+    
     except Exception as e:
         st.error(f"Could not load streamlit_app.py. Error: {e}")
-
 # ========== PAGE 5: Manually Enter Data ==========
 elif page.startswith("5"):
     st.title("Manual Data Entry for Bankruptcy Prediction")
