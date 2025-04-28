@@ -185,7 +185,6 @@ def calculate_financial_ratios(ticker):
             
             if operating_cash_flow and total_debt and total_debt != 0:
                 ratios['ocf_to_debt'] = float(operating_cash_flow / total_debt)
-                st.write(f"OCF/Debt ratio calculated: {ratios['ocf_to_debt']:.2f}")  # Debug line
             else:
                 # Try alternative calculation if total debt is missing
                 total_liabilities = get_value(bs, ['Total Liabilities', 'Total Liabilities Net Minority Interest'])
