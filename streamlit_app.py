@@ -332,18 +332,12 @@ elif page.startswith("2"):
                 # Display the calculated ratios
                 st.subheader("Financial Ratios")
                 ratio_display = pd.DataFrame({
-                    'Ratio': list(ratios.keys()),
-                    'Value': list(ratios.values())
+                    'Ratio': [pretty_names.get(k, k) for k in ratios.keys()],
+                    'Value': [round(v, 2) for v in ratios.values()]
                 })
 
-                # Create pretty display table
-                display_df = pd.DataFrame([
-                    {
-                        pretty_names.get(k, k): v for k, v in ratios.items()
-                    }
-                ])
-                st.dataframe(display_df)
-
+                # Display nicely
+                st.dataframe(ratio_display, use_container_width=True)
                # Apply pretty names
                 ratio_display['Ratio'] = ratio_display['Ratio'].replace(pretty_names)
                 # NOW display it
@@ -487,6 +481,7 @@ elif page.startswith("2"):
 # ========== PAGE 3: Model Training Code ==========
 elif page.startswith("3"):
     st.title("Model Training Code")
+    st.markdown("[Click here to open our full Colab Notebook](https://colab.research.google.com/drive/1yjdS5FEvyKw1rEsMSjnpc3w4jQwdkxIc?usp=sharing)", unsafe_allow_html=True)
 
     try:
         with open("Model.ipynb", "r") as f:
