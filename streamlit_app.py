@@ -342,10 +342,6 @@ elif page.startswith("2"):
                 # NOW display it
                 st.dataframe(ratio_display)
 
-                # Use for display purposes
-                display_df = input_df.rename(columns=pretty_names)
-                st.dataframe(display_df)
-
                 # Check for too many missing values
                 if sum(v == 0 for v in ratios.values()) > 4:  # If more than half are zeros/missing
                     st.warning("⚠️ Insufficient financial data for reliable prediction.")
