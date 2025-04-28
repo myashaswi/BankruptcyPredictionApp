@@ -380,10 +380,20 @@ elif page.startswith("2"):
                     market_cap = company_info.get('marketCap', 0)
                     if market_cap > 500000000000:  # > $500B
                         smoothed_prob = max(0.05, min(0.25, smoothed_prob))  # Cap at 25% for mega corps
-                    
+
+                    # Format final probability
+                    pred_percent = smoothed_prob * 100
+
+                    # Show risk interpretation
+                    if pred_percent < 80:
+                        st.success("🟢 Low bankruptcy risk")
+                    elif pred_percent < 96:
+                        st.warning("🟡 Moderate bankruptcy risk")
+                    else:
+                        st.error("🔴 High bankruptcy risk")
                      
                     # Additional context
-                    with st.expander("Factors influencing this prediction"):
+                    with st.subheader("Factors influencing this prediction"):
                         st.write("Key financial metrics and their impact:")
                         
                         positive_factors = []
