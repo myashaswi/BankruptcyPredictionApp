@@ -325,6 +325,7 @@ elif page.startswith("2"):
                 })
                 st.dataframe(display_df)
 
+                # --- ADD Pretty Names here ---
                 pretty_names = {
                 "working_capital_ratio": "Working Capital Ratio",
                 "roa": "Return on Assets",
@@ -336,8 +337,10 @@ elif page.startswith("2"):
                 "payables_turnover_days": "Payables Turnover Days"
             }
 
-                # Apply the pretty names to the input_df
-                input_df = input_df.rename(columns=pretty_names)
+                # Apply pretty names
+                ratio_display['Ratio'] = ratio_display['Ratio'].replace(pretty_names)
+                # NOW display it
+                st.dataframe(ratio_display)
 
                 # Use for display purposes
                 display_df = input_df.rename(columns=pretty_names)
