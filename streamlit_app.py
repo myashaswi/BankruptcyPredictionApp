@@ -56,7 +56,7 @@ if page.startswith("1"):
 elif page.startswith("2"):
     st.title("Bankruptcy Risk Prediction Based on Stock Ticker")
 
-    ticker = st.text_input("Enter Stock Ticker (example: AAPL, MSFT, NVDA)").upper()
+    ticker = st.text_input("Enter Stock Ticker (example: AAPL, MSFT etc.)").upper()
 
     if ticker and model is not None and scaler is not None:
         try:
@@ -65,6 +65,12 @@ elif page.startswith("2"):
             
             stock = yf.Ticker(ticker)
             info = stock.info
+            # Fetch company name and industry
+            company_name = info.get('longName', 'Unknown Company')
+            industry = info.get('industry', 'Unknown Industry')
+            st.write(f"**Company Name:** {company_name}")
+            st.write(f"**Industry:** {industry}")
+
             fin = stock.financials
             bs = stock.balance_sheet
             cf = stock.cashflow
