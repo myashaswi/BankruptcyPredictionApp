@@ -285,7 +285,7 @@ if page.startswith("1"):
     st.markdown(f"<h3 style='color:{red};'>How?</h3>", unsafe_allow_html=True)
     st.write("""
     - 8 core financial ratios are standardized and combined with industry dummy variables.
-    - A logistic regression model estimates bankruptcy probability over a 5-year horizon.
+    - A logistic regression model estimates bankruptcy probability over a 1-year period.
     - No subjective judgments — purely quantitative early warning system.
     """)
 
