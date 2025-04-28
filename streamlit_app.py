@@ -286,18 +286,18 @@ elif page.startswith("2"):
             # Add debug information
             st.write(f"Fetching data for {ticker}...")
             
-            # Get basic company info before calling the main function
+            # Get basic company info
             stock = yf.Ticker(ticker)
             info = stock.info
             
-            # Display company name and industry (keeping your original display)
+            # Display company name and industry
             company_name = info.get('longName', 'Unknown Company')
             industry = info.get('industry', 'Unknown Industry')
             st.write(f"**Company Name:** {company_name}")
             st.write(f"**Industry:** {industry}")
             
-            # Then use our improved financial ratio calculation function
-            ratios, info = calculate_financial_ratios(ticker)
+            # Use our improved financial ratio calculation function
+            ratios, _ = calculate_financial_ratios(ticker)
             
             # Create DataFrame from ratios dictionary
             input_df = pd.DataFrame([ratios])
@@ -341,7 +341,7 @@ elif page.startswith("2"):
                         title={'text': "Bankruptcy Probability"},
                         gauge={
                             'axis': {'range': [0, 100]},
-                            'bar': {'color': Red},
+                            'bar': {'color': prussian_red},  # Match your variable name
                             'steps': [
                                 {'range': [0, 30], 'color': "lightgreen"},
                                 {'range': [30, 70], 'color': "yellow"},
@@ -353,9 +353,7 @@ elif page.startswith("2"):
                     
                 except Exception as e:
                     st.error(f"Prediction error: {e}")
-                    st.write("Model type:", type(model))
-                    st.write("Model attributes:", dir(model))
-
+                    
         except Exception as e:
             st.error(f"Failed to fetch data or predict. Error: {e}")
             
