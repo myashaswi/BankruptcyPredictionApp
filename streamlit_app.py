@@ -471,13 +471,20 @@ elif page.startswith("3"):
     st.title("Model Training Code")
     st.markdown("[Click here to open our full Colab Notebook](https://colab.research.google.com/drive/1yjdS5FEvyKw1rEsMSjnpc3w4jQwdkxIc?usp=sharing)", unsafe_allow_html=True)
 
+    import nbformat
+    
     try:
         with open("Model.ipynb", "r") as f:
-            content = f.read()
-        st.code(content, language="json")  # Model.ipynb is JSON structured
-    except Exception as e:
-        st.error(f"Could not load Model.ipynb. Error: {e}")
+            notebook = nbformat.read(f, as_version=4)
+        code_cells = []
+        for cell in notebook['cells']:
+            if cell['cell_type'] == 'code':
+                code_cells.append(''.join(cell['source']))
 
+        full_code = '\n\n'.join(code_cells)
+        st.code(full_code, language="python")
+    except Exception as e:
+        st.error(f"Could not load Model.ipynb properly. Error: {e}")
 # ========== PAGE 4: Full Streamlit App Code ==========
 elif page.startswith("4"):
     st.title("Full Streamlit App Code")
