@@ -378,35 +378,7 @@ elif page.startswith("2"):
                     if market_cap > 500000000000:  # > $500B
                         smoothed_prob = max(0.05, min(0.25, smoothed_prob))  # Cap at 25% for mega corps
                     
-                    # Format final probability
-                    pred_percent = smoothed_prob * 100
-                    
-                    # Plot Gauge Chart
-                    fig = go.Figure(go.Indicator(
-                        mode="gauge+number",
-                        value=pred_percent,
-                        number={'valueformat': '.1f'},
-                        title={'text': "Bankruptcy Probability (%)"},
-                        gauge={
-                            'axis': {'range': [0, 100]},
-                            'bar': {'color': "#c95c5d"},
-                            'steps': [
-                                {'range': [0, 70], 'color': "lightgreen"},
-                                {'range': [71, 95], 'color': "yellow"},
-                                {'range': [96, 100], 'color': "red"}
-                            ],
-                        }
-                    ))
-                    st.plotly_chart(fig, use_container_width=True)
-                    
-                    # Show risk interpretation
-                    if pred_percent < 71:
-                        st.success("🟢 Low bankruptcy risk")
-                    elif pred_percent < 96:
-                        st.warning("🟡 Moderate bankruptcy risk")
-                    else:
-                        st.error("🔴 High bankruptcy risk")
-                        
+                     
                     # Additional context
                     with st.expander("Factors influencing this prediction"):
                         st.write("Key financial metrics and their impact:")
