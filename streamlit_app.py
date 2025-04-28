@@ -326,15 +326,18 @@ elif page.startswith("2"):
                 st.dataframe(ratio_display)
 
                 pretty_names = {
-                        'working_capital_ratio': 'Working Capital Ratio',
-                        'roa': 'Return on Assets',
-                        'ebit_to_assets': 'EBIT to Assets',
-                        'debt_to_equity': 'Debt to Equity',
-                        'interest_coverage': 'Interest Coverage',
-                        'ocf_to_debt': 'Operating Cash Flow to Debt',
-                        'receivables_turnover': 'Receivables Turnover',
-                        'payables_turnover_days': 'Payables Turnover Days'
-                    }
+                "working_capital_ratio": "Working Capital Ratio",
+                "roa": "Return on Assets",
+                "ebit_to_assets": "EBIT to Assets",
+                "debt_to_equity": "Debt to Equity",
+                "interest_coverage": "Interest Coverage",
+                "ocf_to_debt": "Operating Cash Flow to Debt",
+                "receivables_turnover": "Receivables Turnover",
+                "payables_turnover_days": "Payables Turnover Days"
+            }
+
+                # Apply the pretty names to the input_df
+                input_df = input_df.rename(columns=pretty_names)
 
                 # Use for display purposes
                 display_df = input_df.rename(columns=pretty_names)
