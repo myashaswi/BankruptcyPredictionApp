@@ -290,7 +290,12 @@ if page.startswith("1"):
     """)
 
     st.latex(r"""z = \sum_{i=1}^{10} \alpha_i \cdot industry_i + \sum_{j=1}^{8} \beta_j \cdot ratio_j""")
-
+    # Expanded explanation
+    st.markdown("The above formula when expanded is:")
+    st.latex(r"""z = \alpha_1 \cdot industry_1 + \alpha_2 \cdot industry_2 + \cdots + \alpha_{10} \cdot industry_{10} + \beta_1 \cdot ratio_1 + \beta_2 \cdot ratio_2 + \cdots + \beta_8 \cdot ratio_8""")
+    st.markdown("Logistic Probability Formula:")
+    st.latex(r"""P(\text{Bankruptcy}=1 \mid X) = \frac{1}{1+e^{-z}}""")
+    
     st.write("Model trained as of **April 25, 2025**.")
     st.markdown("---")
     st.markdown("🔗 [GitHub Repository for this App](https://github.com/myashaswi/BankruptcyPredictionApp)")
