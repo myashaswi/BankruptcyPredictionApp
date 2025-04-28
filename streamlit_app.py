@@ -323,7 +323,6 @@ elif page.startswith("2"):
                     'Ratio': list(ratios.keys()),
                     'Value': list(ratios.values())
                 })
-                st.dataframe(display_df)
 
                 # --- ADD Pretty Names here ---
                 pretty_names = {
