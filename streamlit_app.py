@@ -446,9 +446,9 @@ elif page.startswith("2"):
                                 st.write(f"⚠️ Low Receivables Turnover: {ratios['receivables_turnover']:.2f}")
                             if ratios['payables_turnover_days'] > 80:
                                 st.write(f"⚠️ High Payables Turnover Days : {ratios['payables_turnover_days']:.2f}")
-                            if risk_factors:
+                            if "**Risk Factors**" :
                                 st.subheader("⚠️ Potential Risk Factors Detected:")
-                                for factor in risk_factors:
+                                for factor in "**Risk Factors**":
                                     st.write(f"- {factor}")
                             else:
                                 st.success("✅ No critical financial red flags detected. But still interpret bankruptcy probability carefully.")
