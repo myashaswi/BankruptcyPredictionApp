@@ -312,6 +312,18 @@ elif page.startswith("2"):
         try:
             # Calculate financial ratios using the function defined earlier
             ratios, company_info = calculate_financial_ratios(ticker)
+            
+            # Mapping of ugly model names to pretty display names
+            pretty_names = {
+                'working_capital_ratio': 'Working Capital Ratio',
+                'roa': 'Return on Assets',
+                'ebit_to_assets': 'EBIT to Assets',
+                'debt_to_equity': 'Debt to Equity',
+                'interest_coverage': 'Interest Coverage',
+                'ocf_to_debt': 'Operating Cash Flow to Debt',
+                'receivables_turnover': 'Receivables Turnover',
+                'payables_turnover_days': 'Payables Turnover Days'
+            }
 
             if ratios:
                 # Create DataFrame from ratios dictionary
