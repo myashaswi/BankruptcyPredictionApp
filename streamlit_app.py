@@ -395,9 +395,9 @@ elif page.startswith("2"):
                             'axis': {'range': [0, 100]},
                             'bar': {'color': "#c95c5d"},
                             'steps': [
-                                {'range': [0, 30], 'color': "lightgreen"},
-                                {'range': [30, 70], 'color': "yellow"},
-                                {'range': [70, 100], 'color': "red"}
+                                {'range': [0, 70], 'color': "lightgreen"},
+                                {'range': [71, 95], 'color': "yellow"},
+                                {'range': [96, 100], 'color': "red"}
                             ],
                         }
                     ))
