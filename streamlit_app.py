@@ -338,11 +338,7 @@ elif page.startswith("2"):
 
                 # Display nicely
                 st.dataframe(ratio_display, use_container_width=True)
-               # Apply pretty names
-                ratio_display['Ratio'] = ratio_display['Ratio'].replace(pretty_names)
-                # NOW display it
-                st.dataframe(ratio_display)
-
+               
                 # Check for too many missing values
                 if sum(v == 0 for v in ratios.values()) > 4:  # If more than half are zeros/missing
                     st.warning("⚠️ Insufficient financial data for reliable prediction.")
