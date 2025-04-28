@@ -473,7 +473,7 @@ elif page.startswith("2"):
             
 # ========== PAGE 3: Model Training Code ==========
 elif page.startswith("3"):
-    st.title("1) Original Code for Training Abnormal Accruals Model")
+    st.title("1) Original Code for Training Bankruptcy Model")
 
     st.markdown("""
     The Colab Notebook can be found here:  
