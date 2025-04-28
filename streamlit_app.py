@@ -284,16 +284,16 @@ if page.startswith("1"):
     st.markdown(f"<h2 style='color:{red};'>What, How, Why?</h2>", unsafe_allow_html=True)
 
     st.markdown(f"<h3 style='color:{red};'>What?</h3>", unsafe_allow_html=True)
-    st.write("This app predicts bankruptcy risk using a customized logistic regression model, with **industry-specific intercepts** and **key financial ratios**.")
+    st.write("This app predicts bankruptcy risk using financial ratios and a logistic regression model tailored by industry groupings. It draws inspiration from Altman's Z-score but is expanded for modern datasets.")
 
     st.markdown(f"<h3 style='color:{red};'>Why?</h3>", unsafe_allow_html=True)
     st.write("Early prediction of bankruptcy risk helps prioritize audits, deeper analysis, and proactive financial decisions.")
 
     st.markdown(f"<h3 style='color:{red};'>How?</h3>", unsafe_allow_html=True)
     st.write("""
-    - Financial ratios like ROA, Debt-to-Equity, Interest Coverage, etc.
-    - Industry dummy variables for 10 industries
-    - Logistic regression combining both features to predict 5-year bankruptcy likelihood
+    - 8 core financial ratios are standardized and combined with industry dummy variables.
+    - A logistic regression model estimates bankruptcy probability over a 5-year horizon.
+    - No subjective judgments — purely quantitative early warning system.
     """)
 
     st.latex(r"""z = \sum_{i=1}^{10} \alpha_i \cdot industry_i + \sum_{j=1}^{8} \beta_j \cdot ratio_j""")
@@ -324,7 +324,22 @@ elif page.startswith("2"):
                     'Value': list(ratios.values())
                 })
                 st.dataframe(ratio_display)
-                
+
+                pretty_names = {
+                        'working_capital_ratio': 'Working Capital Ratio',
+                        'roa': 'Return on Assets',
+                        'ebit_to_assets': 'EBIT to Assets',
+                        'debt_to_equity': 'Debt to Equity',
+                        'interest_coverage': 'Interest Coverage',
+                        'ocf_to_debt': 'Operating Cash Flow to Debt',
+                        'receivables_turnover': 'Receivables Turnover',
+                        'payables_turnover_days': 'Payables Turnover Days'
+                    }
+
+# Use for display purposes
+display_df = input_df.rename(columns=pretty_names)
+st.dataframe(display_df)
+
                 # Check for too many missing values
                 if sum(v == 0 for v in ratios.values()) > 4:  # If more than half are zeros/missing
                     st.warning("⚠️ Insufficient financial data for reliable prediction.")
@@ -415,14 +430,29 @@ elif page.startswith("2"):
                         
                         with col2:
                             st.write("**Risk factors:**")
-                            if ratios['working_capital_ratio'] < 0:
+                            if ratios['working_capital_ratio'] < 0.2:
                                 st.write(f"⚠️ Working Capital Ratio: {ratios['working_capital_ratio']:.2f}")
-                            if ratios['debt_to_equity'] > 1:
+                            if ratios['roa'] < 0.02:
+                                st.write(f"⚠️ Return on Assets {ratios['roa']:.2f}")
+                            if ratios['ebit_assets'] < 0.03:
+                                st.write(f"⚠️ EBIT to Assets: {ratios['ebit_assets']:.2f}")
+                            if ratios['debt_to_equity'] > 2:
                                 st.write(f"⚠️ Debt to Equity: {ratios['debt_to_equity']:.2f}")
-                            if ratios['interest_coverage'] < 1.5:
+                            if ratios['interest_coverage'] < 2:
                                 st.write(f"⚠️ Interest Coverage: {ratios['interest_coverage']:.2f}")
-                            if ratios['ocf_to_debt'] < 0.1:
-                                st.write(f"⚠️ Low Cash Flow to Debt: {ratios['ocf_to_debt']:.2f}")
+                            if ratios['ocf_to_debt'] < 0.2:
+                                st.write(f"⚠️ Low Operating Cash Flow to Debt: {ratios['ocf_to_debt']:.2f}")
+                            if ratios['receivables_turnover'] < 4:
+                                st.write(f"⚠️ Low Receivables Turnover: {ratios['receivables_turnover']:.2f}")
+                            if ratios['payables_turnover_days'] > 80:
+                                st.write(f"⚠️ High Payables Turnover Days : {ratios['payables_turnover_days']:.2f}")
+                            if risk_factors:
+                                st.subheader("⚠️ Potential Risk Factors Detected:")
+                                for factor in risk_factors:
+                                    st.write(f"- {factor}")
+                            else:
+                                else:
+                                st.success("✅ No critical financial red flags detected. But still interpret bankruptcy probability carefully.")
                 
                 except Exception as e:
                     st.error(f"Prediction failed. Error: {e}")
@@ -515,9 +545,9 @@ elif page.startswith("5"):
                     'axis': {'range': [0, 100]},
                     'bar': {'color': red},
                     'steps': [
-                        {'range': [0, 30], 'color': "lightgreen"},
-                        {'range': [30, 70], 'color': "yellow"},
-                        {'range': [70, 100], 'color': "red"}
+                        {'range': [0, 60], 'color': "lightgreen"},
+                        {'range': [60, 90], 'color': "yellow"},
+                        {'range': [90, 100], 'color': "red"}
                     ],
                 }
             ))
