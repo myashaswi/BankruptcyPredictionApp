@@ -404,9 +404,9 @@ elif page.startswith("2"):
                     st.plotly_chart(fig, use_container_width=True)
                     
                     # Show risk interpretation
-                    if pred_percent < 30:
+                    if pred_percent < 71:
                         st.success("🟢 Low bankruptcy risk")
-                    elif pred_percent < 70:
+                    elif pred_percent < 96:
                         st.warning("🟡 Moderate bankruptcy risk")
                     else:
                         st.error("🔴 High bankruptcy risk")
