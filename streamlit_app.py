@@ -283,7 +283,6 @@ elif page.startswith("2"):
 
     if ticker and model is not None and scaler is not None:
         try:
-            # Add debug information
             st.write(f"Fetching data for {ticker}...")
             
             # Get basic company info
@@ -296,8 +295,111 @@ elif page.startswith("2"):
             st.write(f"**Company Name:** {company_name}")
             st.write(f"**Industry:** {industry}")
             
-            # Use our improved financial ratio calculation function
-            ratios, _ = calculate_financial_ratios(ticker)
+            # Get financial data
+            fin = stock.financials
+            bs = stock.balance_sheet
+            cf = stock.cashflow
+            
+            # Create a dictionary for ratios
+            ratios = {}
+            
+            # Calculate ratios with robust error handling
+            # Working Capital Ratio
+            try:
+                current_assets = bs.loc['Total Current Assets'][0] if 'Total Current Assets' in bs.index else None
+                current_liabilities = bs.loc['Total Current Liabilities'][0] if 'Total Current Liabilities' in bs.index else None
+                total_assets = bs.loc['Total Assets'][0] if 'Total Assets' in bs.index else None
+                
+                if current_assets and current_liabilities and total_assets:
+                    ratios['working_capital_ratio'] = float((current_assets - current_liabilities) / total_assets)
+                else:
+                    ratios['working_capital_ratio'] = 0.0
+            except Exception as e:
+                ratios['working_capital_ratio'] = 0.0
+            
+            # ROA
+            try:
+                net_income = fin.loc['Net Income'][0] if 'Net Income' in fin.index else None
+                total_assets = bs.loc['Total Assets'][0] if 'Total Assets' in bs.index else None
+                
+                if net_income and total_assets:
+                    ratios['roa'] = float(net_income / total_assets)
+                else:
+                    ratios['roa'] = 0.0
+            except Exception as e:
+                ratios['roa'] = 0.0
+            
+            # EBIT to Assets
+            try:
+                ebit = fin.loc['EBIT'][0] if 'EBIT' in fin.index else (fin.loc['Operating Income'][0] if 'Operating Income' in fin.index else None)
+                total_assets = bs.loc['Total Assets'][0] if 'Total Assets' in bs.index else None
+                
+                if ebit and total_assets:
+                    ratios['ebit_to_assets'] = float(ebit / total_assets)
+                else:
+                    ratios['ebit_to_assets'] = 0.0
+            except Exception as e:
+                ratios['ebit_to_assets'] = 0.0
+            
+            # Debt to Equity
+            try:
+                total_debt = bs.loc['Total Debt'][0] if 'Total Debt' in bs.index else (bs.loc['Long Term Debt'][0] if 'Long Term Debt' in bs.index else None)
+                total_equity = bs.loc['Total Stockholder Equity'][0] if 'Total Stockholder Equity' in bs.index else (bs.loc['Stockholders Equity'][0] if 'Stockholders Equity' in bs.index else None)
+                
+                if total_debt and total_equity and total_equity > 0:
+                    ratios['debt_to_equity'] = float(total_debt / total_equity)
+                else:
+                    ratios['debt_to_equity'] = 0.0
+            except Exception as e:
+                ratios['debt_to_equity'] = 0.0
+            
+            # Interest Coverage
+            try:
+                ebit = fin.loc['EBIT'][0] if 'EBIT' in fin.index else (fin.loc['Operating Income'][0] if 'Operating Income' in fin.index else None)
+                interest_expense = fin.loc['Interest Expense'][0] if 'Interest Expense' in fin.index else None
+                
+                if ebit and interest_expense and interest_expense != 0:
+                    ratios['interest_coverage'] = float(ebit / interest_expense)
+                else:
+                    ratios['interest_coverage'] = 0.0
+            except Exception as e:
+                ratios['interest_coverage'] = 0.0
+            
+            # OCF to Debt
+            try:
+                operating_cash_flow = cf.loc['Total Cash From Operating Activities'][0] if 'Total Cash From Operating Activities' in cf.index else None
+                total_debt = bs.loc['Total Debt'][0] if 'Total Debt' in bs.index else (bs.loc['Long Term Debt'][0] if 'Long Term Debt' in bs.index else None)
+                
+                if operating_cash_flow and total_debt and total_debt != 0:
+                    ratios['ocf_to_debt'] = float(operating_cash_flow / total_debt)
+                else:
+                    ratios['ocf_to_debt'] = 0.0
+            except Exception as e:
+                ratios['ocf_to_debt'] = 0.0
+            
+            # Receivables Turnover
+            try:
+                total_revenue = fin.loc['Total Revenue'][0] if 'Total Revenue' in fin.index else (fin.loc['Revenue'][0] if 'Revenue' in fin.index else None)
+                accounts_receivable = bs.loc['Accounts Receivable'][0] if 'Accounts Receivable' in bs.index else (bs.loc['Net Receivables'][0] if 'Net Receivables' in bs.index else None)
+                
+                if total_revenue and accounts_receivable and accounts_receivable != 0:
+                    ratios['receivables_turnover'] = float(total_revenue / accounts_receivable)
+                else:
+                    ratios['receivables_turnover'] = 0.0
+            except Exception as e:
+                ratios['receivables_turnover'] = 0.0
+            
+            # Payables Turnover Days
+            try:
+                accounts_payable = bs.loc['Accounts Payable'][0] if 'Accounts Payable' in bs.index else None
+                cost_of_revenue = fin.loc['Cost Of Revenue'][0] if 'Cost Of Revenue' in fin.index else (fin.loc['Cost of Revenue'][0] if 'Cost of Revenue' in fin.index else None)
+                
+                if accounts_payable and cost_of_revenue and cost_of_revenue != 0:
+                    ratios['payables_turnover_days'] = float((accounts_payable / cost_of_revenue) * 365)
+                else:
+                    ratios['payables_turnover_days'] = 60.0
+            except Exception as e:
+                ratios['payables_turnover_days'] = 60.0
             
             # Create DataFrame from ratios dictionary
             input_df = pd.DataFrame([ratios])
@@ -306,8 +408,8 @@ elif page.startswith("2"):
             st.subheader("Input Ratios Used:")
             st.dataframe(input_df)
             
-            # Check for too many NaNs or zeros
-            if input_df.isnull().mean().mean() > 0.5 or (input_df == 0).mean().mean() > 0.75:
+            # Check for too many NaNs
+            if input_df.isnull().mean().mean() > 0.5:
                 st.warning("⚠️ Insufficient financial data to predict bankruptcy risk for this company.")
             else:
                 # Fill any remaining NaNs with zeros
@@ -315,8 +417,7 @@ elif page.startswith("2"):
                 
                 # Ensure all columns match the expected order
                 expected_cols = ['working_capital_ratio', 'roa', 'ebit_to_assets', 'debt_to_equity',
-                               'interest_coverage', 'ocf_to_debt', 'receivables_turnover', 'payables_turnover_days']
-                
+                                'interest_coverage', 'ocf_to_debt', 'receivables_turnover', 'payables_turnover_days']
                 input_df = input_df.reindex(columns=expected_cols, fill_value=0)
                 
                 # Scale the input data
@@ -326,9 +427,18 @@ elif page.startswith("2"):
                 
                 # Use the model to predict
                 try:
-                    pred = model.predict_proba(scaled)[0][1]
+                    # Get prediction probabilities for both classes (0 and 1)
+                    probabilities = model.predict_proba(scaled)
+                    # Display full probabilities array to debug
+                    st.write("Debug - Full probabilities:", probabilities)
                     
-                    # Format the probability to show as percentage with 2 decimal places
+                    # Make sure we're getting the right probability (for class 1 - bankruptcy)
+                    if probabilities.shape[1] >= 2:
+                        pred = probabilities[0][1]  # Get probability for class 1
+                    else:
+                        pred = probabilities[0][0]  # Fallback if only one probability
+                    
+                    # Format the probability as percentage
                     st.write(f"Raw prediction probability: {pred:.4%}")
                     
                     pred_percent = pred * 100
@@ -337,11 +447,11 @@ elif page.startswith("2"):
                     fig = go.Figure(go.Indicator(
                         mode="gauge+number",
                         value=pred_percent,
-                        number={'valueformat': '.2f'},  # Format to 2 decimal places
+                        number={'valueformat': '.2f'},
                         title={'text': "Bankruptcy Probability"},
                         gauge={
                             'axis': {'range': [0, 100]},
-                            'bar': {'color': red},  # Match your variable name
+                            'bar': {'color': "#c95c5d"},  # Direct color code instead of variable
                             'steps': [
                                 {'range': [0, 30], 'color': "lightgreen"},
                                 {'range': [30, 70], 'color': "yellow"},
@@ -353,6 +463,13 @@ elif page.startswith("2"):
                     
                 except Exception as e:
                     st.error(f"Prediction error: {e}")
+                    # Debug information
+                    st.write("Debug - Model type:", type(model))
+                    st.write("Debug - Scaled data shape:", scaled.shape)
+                    # Try simple prediction
+                    if model is not None:
+                        simple_pred = model.predict(scaled)
+                        st.write("Debug - Simple prediction:", simple_pred)
                     
         except Exception as e:
             st.error(f"Failed to fetch data or predict. Error: {e}")
