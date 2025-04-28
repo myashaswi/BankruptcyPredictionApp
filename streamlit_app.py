@@ -451,7 +451,6 @@ elif page.startswith("2"):
                                 for factor in risk_factors:
                                     st.write(f"- {factor}")
                             else:
-                                else:
                                 st.success("✅ No critical financial red flags detected. But still interpret bankruptcy probability carefully.")
                 
                 except Exception as e:
