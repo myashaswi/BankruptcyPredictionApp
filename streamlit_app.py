@@ -242,14 +242,7 @@ def calculate_financial_ratios(ticker):
         except Exception as e:
             st.write(f"Payables turnover days calculation error: {e}")
             ratios['payables_turnover_days'] = 60.0  # Industry average default
-        
-        # Hide the detailed calculation error messages
-        if st.checkbox("Show detailed calculation errors", value=False):
-            st.write("Calculation error messages will appear here.")
-        else:
-            # Clear any previous error messages
-            placeholder = st.empty()
-        
+                
         return ratios, info
     
     except Exception as e:
@@ -335,9 +328,6 @@ elif page.startswith("2"):
                     'Ratio': [pretty_names.get(k, k) for k in ratios.keys()],
                     'Value': [round(v, 2) for v in ratios.values()]
                 })
-
-                # Display nicely
-                st.dataframe(ratio_display, use_container_width=True)
                
                 # Check for too many missing values
                 if sum(v == 0 for v in ratios.values()) > 4:  # If more than half are zeros/missing
