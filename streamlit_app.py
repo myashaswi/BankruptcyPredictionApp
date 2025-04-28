@@ -473,18 +473,18 @@ elif page.startswith("3"):
 
 import nbformat
     
-    try:
-        with open("Model.ipynb", "r") as f:
-            notebook = nbformat.read(f, as_version=4)
-        code_cells = []
-        for cell in notebook['cells']:
-            if cell['cell_type'] == 'code':
-                code_cells.append(''.join(cell['source']))
+try:
+    with open("Model.ipynb", "r") as f:
+        notebook = nbformat.read(f, as_version=4)
+    code_cells = []
+    for cell in notebook['cells']:
+        if cell['cell_type'] == 'code':
+            code_cells.append(''.join(cell['source']))
 
-        full_code = '\n\n'.join(code_cells)
-        st.code(full_code, language="python")
-    except Exception as e:
-        st.error(f"Could not load Model.ipynb properly. Error: {e}")
+    full_code = '\n\n'.join(code_cells)
+    st.code(full_code, language="python")
+except Exception as e:
+    st.error(f"Could not load Model.ipynb properly. Error: {e}")
 # ========== PAGE 4: Full Streamlit App Code ==========
 elif page.startswith("4"):
     st.title("Full Streamlit App Code")
