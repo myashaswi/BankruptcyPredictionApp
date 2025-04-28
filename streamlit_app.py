@@ -475,7 +475,7 @@ elif page.startswith("3"):
     [🔗 Click to open Colab Notebook](https://colab.research.google.com/drive/1yjdS5FEvyKw1rEsMSjnpc3w4jQwdkxIc?usp=sharing)
     """)
 
-    import nbformat
+import nbformat
 
     try:
         with open("Model.ipynb", "r") as f:
