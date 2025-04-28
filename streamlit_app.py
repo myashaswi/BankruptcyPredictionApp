@@ -285,6 +285,9 @@ if page.startswith("1"):
     st.markdown(f"<h3 style='color:{red};'>How?</h3>", unsafe_allow_html=True)
     st.write("""
     - 8 core financial ratios are standardized and combined with industry dummy variables.
+    - These are 5 of the 10 industries we tested the model on and which performed the best:
+    Software & Services (4510) Capital Goods (2010), Consumer Services (2530), Household & Personal Products (3030), Materials (1510)
+
     - A logistic regression model estimates bankruptcy probability over a 1-year period.
     - No subjective judgments — purely quantitative early warning system.
     """)
