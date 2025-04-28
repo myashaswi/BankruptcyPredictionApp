@@ -468,23 +468,29 @@ elif page.startswith("2"):
             
 # ========== PAGE 3: Model Training Code ==========
 elif page.startswith("3"):
-    st.title("Model Training Code")
-    st.markdown("[Click here to open our full Colab Notebook](https://colab.research.google.com/drive/1yjdS5FEvyKw1rEsMSjnpc3w4jQwdkxIc?usp=sharing)", unsafe_allow_html=True)
+    st.title("1) Original Code for Training Abnormal Accruals Model")
 
-import nbformat
-    
-try:
-    with open("Model.ipynb", "r") as f:
-        notebook = nbformat.read(f, as_version=4)
-    code_cells = []
-    for cell in notebook['cells']:
-        if cell['cell_type'] == 'code':
-            code_cells.append(''.join(cell['source']))
+    st.markdown("""
+    The Colab Notebook can be found here:  
+    [🔗 Click to open Colab Notebook](https://colab.research.google.com/drive/1yjdS5FEvyKw1rEsMSjnpc3w4jQwdkxIc?usp=sharing)
+    """)
 
-    full_code = '\n\n'.join(code_cells)
-    st.code(full_code, language="python")
-except Exception as e:
-    st.error(f"Could not load Model.ipynb properly. Error: {e}")
+    import nbformat
+
+    try:
+        with open("Model.ipynb", "r") as f:
+            notebook = nbformat.read(f, as_version=4)
+
+        code_cells = []
+        for cell in notebook['cells']:
+            if cell['cell_type'] == 'code':
+                code_cells.append(''.join(cell['source']))
+
+        full_code = '\n\n'.join(code_cells)
+        st.code(full_code, language="python")
+    except Exception as e:
+        st.error(f"❌ Could not load Model.ipynb properly. Error: {e}")
+
 # ========== PAGE 4: Full Streamlit App Code ==========
 elif page.startswith("4"):
     st.title("Full Streamlit App Code")
