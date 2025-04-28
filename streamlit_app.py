@@ -341,7 +341,7 @@ elif page.startswith("2"):
                         title={'text': "Bankruptcy Probability"},
                         gauge={
                             'axis': {'range': [0, 100]},
-                            'bar': {'color': prussian_red},  # Match your variable name
+                            'bar': {'color': red},  # Match your variable name
                             'steps': [
                                 {'range': [0, 30], 'color': "lightgreen"},
                                 {'range': [30, 70], 'color': "yellow"},
