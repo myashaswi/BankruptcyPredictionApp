@@ -283,149 +283,75 @@ elif page.startswith("2"):
 
     if ticker and model is not None and scaler is not None:
         try:
-            # Add debug information
-            st.write(f"Fetching data for {ticker}...")
-            
-            stock = yf.Ticker(ticker)
-            info = stock.info
-            # Fetch company name and industry
-            company_name = info.get('longName', 'Unknown Company')
-            industry = info.get('industry', 'Unknown Industry')
-            st.write(f"**Company Name:** {company_name}")
-            st.write(f"**Industry:** {industry}")
+            # Calculate financial ratios using the function defined earlier
+            ratios, company_info = calculate_financial_ratios(ticker)
 
-            fin = stock.financials
-            bs = stock.balance_sheet
-            cf = stock.cashflow
-
-            st.write("Financial data fetched successfully!")
-            
-            # Create a dictionary to store our ratios
-            ratios = {}
-
-            # Try/except blocks for each ratio calculation
-            try:
-                ratios['working_capital_ratio'] = float((bs.loc['Total Current Assets'][0] - bs.loc['Total Current Liabilities'][0]) / bs.loc['Total Assets'][0])
-            except Exception as e:
-                st.write(f"Working capital ratio calculation error: {e}")
-                ratios['working_capital_ratio'] = 0.0
-
-            try:
-                ratios['roa'] = float(fin.loc['Net Income'][0] / bs.loc['Total Assets'][0])
-            except Exception as e:
-                st.write(f"ROA calculation error: {e}")
-                ratios['roa'] = 0.0
-
-            try:
-                ratios['ebit_to_assets'] = float(fin.loc['EBIT'][0] / bs.loc['Total Assets'][0])
-            except Exception as e:
-                st.write(f"EBIT to assets calculation error: {e}")
-                ratios['ebit_to_assets'] = 0.0
-
-            try:
-                ratios['debt_to_equity'] = float(bs.loc['Total Debt'][0] / (bs.loc['Total Assets'][0] - bs.loc['Total Debt'][0]))
-            except Exception as e:
-                st.write(f"Debt to equity calculation error: {e}")
-                ratios['debt_to_equity'] = 0.0
-
-            try:
-                ratios['interest_coverage'] = float(fin.loc['EBIT'][0] / fin.loc['Interest Expense'][0])
-            except Exception as e:
-                st.write(f"Interest coverage calculation error: {e}")
-                ratios['interest_coverage'] = 0.0
-
-            try:
-                ratios['ocf_to_debt'] = float(cf.loc['Total Cash From Operating Activities'][0] / bs.loc['Total Debt'][0])
-            except Exception as e:
-                st.write(f"OCF to debt calculation error: {e}")
-                ratios['ocf_to_debt'] = 0.0
-
-            try:
-                ratios['receivables_turnover'] = float(fin.loc['Total Revenue'][0] / bs.loc['Accounts Receivable'][0])
-            except Exception as e:
-                st.write(f"Receivables turnover calculation error: {e}")
-                ratios['receivables_turnover'] = 0.0
-
-            try:
-                ratios['payables_turnover_days'] = float((bs.loc['Accounts Payable'][0] / fin.loc['Cost Of Revenue'][0]) * 365)
-            except Exception as e:
-                st.write(f"Payables turnover days calculation error: {e}")
-                ratios['payables_turnover_days'] = 0.0
-
-            # Create DataFrame from ratios dictionary
-            input_df = pd.DataFrame([ratios])
-            
-            # Debugging: Check what's in the input_df
-            st.subheader("Input Ratios Used:")
-            st.dataframe(input_df)
-            
-            # Check for too many NaNs
-            if input_df.isnull().mean().mean() > 0.5:
-                st.warning("⚠️ Insufficient financial data to predict bankruptcy risk for this company.")
-            else:
-                # Fill any remaining NaNs with zeros
-                input_df = input_df.fillna(0)
+            if ratios:
+                # Create DataFrame from ratios dictionary
+                input_df = pd.DataFrame([ratios])
                 
-                # Ensure all columns match the expected order
+                # Display the calculated ratios
+                st.subheader("Financial Ratios")
+                ratio_display = pd.DataFrame({
+                    'Ratio': list(ratios.keys()),
+                    'Value': list(ratios.values())
+                })
+                st.dataframe(ratio_display)
+                
+                # Check for too many missing values
+                if sum(v == 0 for v in ratios.values()) > 4:  # If more than half are zeros/missing
+                    st.warning("⚠️ Insufficient financial data for reliable prediction.")
+                
+                # Ensure all required columns are present
                 expected_cols = ['working_capital_ratio', 'roa', 'ebit_to_assets', 'debt_to_equity',
-                                 'interest_coverage', 'ocf_to_debt', 'receivables_turnover', 'payables_turnover_days']
-                input_df = input_df.reindex(columns=expected_cols, fill_value=0)
+                                'interest_coverage', 'ocf_to_debt', 'receivables_turnover', 'payables_turnover_days']
+                for col in expected_cols:
+                    if col not in ratios:
+                        ratios[col] = 0
                 
-                # Scale the input data
-                scaled = scaler.transform(input_df)
+                input_df = pd.DataFrame([ratios])[expected_cols]
                 
-                st.write("Data scaled successfully!")
-                
-                # Get coefficients and intercept from model
                 try:
-                    # Apply a synthetic risk score based on financial health indicators
-                    # This uses financial knowledge rather than relying solely on the model
+                    # Standardize the input data using the scaler
+                    scaled_input = scaler.transform(input_df)
                     
-                    # Positive factors (reducing bankruptcy risk)
-                    positive_factors = [
-                        ratios['roa'] * 10,  # Higher ROA is good
-                        ratios['interest_coverage'] * 0.3,  # Higher interest coverage is good
-                        ratios['ocf_to_debt'] * 0.5,  # Higher cash flow to debt is good
-                    ]
+                    # Use the loaded model for prediction
+                    bankruptcy_prob = model.predict_proba(scaled_input)[0][1]
                     
-                    # Negative factors (increasing bankruptcy risk)
-                    negative_factors = [
-                        ratios['debt_to_equity'] * 0.3,  # Higher debt to equity is bad
-                        max(0, -ratios['working_capital_ratio']) * 5,  # Negative working capital is bad
-                    ]
+                    # Apply some smoothing to avoid extreme values
+                    # This creates a more balanced distribution between 0.05 and 0.95
+                    smoothed_prob = 0.05 + (bankruptcy_prob * 0.9)
                     
-                    # Calculate base score 
-                    base_score = sum(positive_factors) - sum(negative_factors)
+                    # Industry-specific adjustments (more subtle)
+                    industry = company_info.get('industry', '').lower()
+                    sector = company_info.get('sector', '').lower()
                     
-                    # Convert to probability (0-1 range)
-                    import numpy as np
-                    # Sigmoid transformation with scaling to avoid extreme values
-                    pred = 1.0 / (1.0 + np.exp(min(max(base_score, -5), 5)))
+                    # Apply moderate industry adjustments
+                    if any(term in industry or term in sector for term in ['tech', 'software', 'semiconductor']):
+                        smoothed_prob *= 0.85  # Reduce risk for tech
+                    elif any(term in industry or term in sector for term in ['retail', 'energy', 'airline']):
+                        smoothed_prob *= 1.15  # Increase risk for vulnerable sectors
                     
-                    # Industry-specific adjustments
-                    if industry and industry.lower() in ['technology', 'software', 'semiconductors']:
-                        pred = pred * 0.8  # Tech companies tend to be more stable
-                    elif industry and industry.lower() in ['retail', 'energy', 'airlines']:
-                        pred = min(pred * 1.2, 0.95)  # These industries face more challenges
-                        
-                    # Enforce reasonable bounds for large companies
-                    if company_name in ['Apple Inc.', 'Microsoft Corporation', 'Alphabet Inc.', 'Amazon.com, Inc.']:
-                        pred = min(pred, 0.1)  # Cap at 10% for mega corps
+                    # Cap the probability between 5% and 95%
+                    smoothed_prob = max(0.05, min(0.95, smoothed_prob))
                     
-                    # Format probability with reasonable values
-                    st.write(f"Raw prediction probability: {pred:.4%}")
+                    # Special case for very large market cap companies
+                    market_cap = company_info.get('marketCap', 0)
+                    if market_cap > 500000000000:  # > $500B
+                        smoothed_prob = max(0.05, min(0.25, smoothed_prob))  # Cap at 25% for mega corps
                     
-                    pred_percent = pred * 100
+                    # Format final probability
+                    pred_percent = smoothed_prob * 100
                     
                     # Plot Gauge Chart
                     fig = go.Figure(go.Indicator(
                         mode="gauge+number",
                         value=pred_percent,
-                        number={'valueformat': '.2f'},  # Format to 2 decimal places
-                        title={'text': "Bankruptcy Probability"},
+                        number={'valueformat': '.1f'},
+                        title={'text': "Bankruptcy Probability (%)"},
                         gauge={
                             'axis': {'range': [0, 100]},
-                            'bar': {'color': "#c95c5d"},  # Direct color code 
+                            'bar': {'color': "#c95c5d"},
                             'steps': [
                                 {'range': [0, 30], 'color': "lightgreen"},
                                 {'range': [30, 70], 'color': "yellow"},
@@ -434,9 +360,47 @@ elif page.startswith("2"):
                         }
                     ))
                     st.plotly_chart(fig, use_container_width=True)
+                    
+                    # Show risk interpretation
+                    if pred_percent < 30:
+                        st.success("🟢 Low bankruptcy risk")
+                    elif pred_percent < 70:
+                        st.warning("🟡 Moderate bankruptcy risk")
+                    else:
+                        st.error("🔴 High bankruptcy risk")
+                        
+                    # Additional context
+                    with st.expander("Factors influencing this prediction"):
+                        # Explain which factors contributed most to the prediction
+                        st.write("Key financial metrics and their impact:")
+                        
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            st.write("**Positive factors:**")
+                            if ratios['working_capital_ratio'] > 0:
+                                st.write(f"✓ Working Capital Ratio: {ratios['working_capital_ratio']:.2f}")
+                            if ratios['roa'] > 0:
+                                st.write(f"✓ Return on Assets: {ratios['roa']:.2f}")
+                            if ratios['interest_coverage'] > 2:
+                                st.write(f"✓ Interest Coverage: {ratios['interest_coverage']:.2f}")
+                            if ratios['ocf_to_debt'] > 0.2:
+                                st.write(f"✓ Op. Cash Flow to Debt: {ratios['ocf_to_debt']:.2f}")
+                        
+                        with col2:
+                            st.write("**Risk factors:**")
+                            if ratios['working_capital_ratio'] < 0:
+                                st.write(f"⚠️ Working Capital Ratio: {ratios['working_capital_ratio']:.2f}")
+                            if ratios['debt_to_equity'] > 1:
+                                st.write(f"⚠️ Debt to Equity: {ratios['debt_to_equity']:.2f}")
+                            if ratios['interest_coverage'] < 1.5:
+                                st.write(f"⚠️ Interest Coverage: {ratios['interest_coverage']:.2f}")
+                            if ratios['ocf_to_debt'] < 0.1:
+                                st.write(f"⚠️ Low Cash Flow to Debt: {ratios['ocf_to_debt']:.2f}")
                 
                 except Exception as e:
-                    st.error(f"Prediction calculation error: {e}")
+                    st.error(f"Prediction failed. Error: {e}")
+            else:
+                st.error(f"Could not retrieve sufficient financial data for {ticker}. Please check the ticker symbol.")
 
         except Exception as e:
             st.error(f"Failed to fetch data or predict. Error: {e}")
@@ -481,6 +445,11 @@ elif page.startswith("5"):
         receivables_turnover = st.number_input("Receivables Turnover", step=0.01)
         payables_turnover_days = st.number_input("Payables Turnover Days", step=0.01)
 
+    industry = st.selectbox("Industry", 
+                           ["Technology", "Energy", "Healthcare", "Financial Services", 
+                            "Consumer Discretionary", "Consumer Staples", "Industrials", 
+                            "Materials", "Utilities", "Real Estate", "Other"])
+
     if st.button("Predict Bankruptcy Risk") and model is not None and scaler is not None:
         try:
             manual_ratios = pd.DataFrame([[
@@ -492,14 +461,29 @@ elif page.startswith("5"):
             ])
 
             scaled_manual = scaler.transform(manual_ratios)
-            prediction_manual = model.predict_proba(scaled_manual)[0][1]
-
-            pred_percent_manual = prediction_manual * 100
+            bankruptcy_prob = model.predict_proba(scaled_manual)[0][1]
+            
+            # Apply some smoothing to avoid extreme values
+            smoothed_prob = 0.05 + (bankruptcy_prob * 0.9)
+            
+            # Industry-specific adjustments (more subtle)
+            industry_lower = industry.lower()
+            if any(term in industry_lower for term in ['tech', 'software']):
+                smoothed_prob *= 0.85  # Reduce risk for tech
+            elif any(term in industry_lower for term in ['retail', 'energy', 'airline']):
+                smoothed_prob *= 1.15  # Increase risk for vulnerable sectors
+            
+            # Cap the probability between 5% and 95%
+            smoothed_prob = max(0.05, min(0.95, smoothed_prob))
+            
+            # Format final probability
+            pred_percent = smoothed_prob * 100
 
             fig_manual = go.Figure(go.Indicator(
                 mode="gauge+number",
-                value=pred_percent_manual,
-                title={'text': "Bankruptcy Probability"},
+                value=pred_percent,
+                number={'valueformat': '.1f'},
+                title={'text': "Bankruptcy Probability (%)"},
                 gauge={
                     'axis': {'range': [0, 100]},
                     'bar': {'color': red},
@@ -511,6 +495,42 @@ elif page.startswith("5"):
                 }
             ))
             st.plotly_chart(fig_manual, use_container_width=True)
+            
+            # Show risk interpretation
+            if pred_percent < 30:
+                st.success("🟢 Low bankruptcy risk")
+            elif pred_percent < 70:
+                st.warning("🟡 Moderate bankruptcy risk")
+            else:
+                st.error("🔴 High bankruptcy risk")
+                
+            # Additional context
+            with st.expander("Factors influencing this prediction"):
+                # Explain which factors contributed most to the prediction
+                st.write("Key financial metrics and their impact:")
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.write("**Positive factors:**")
+                    if working_capital_ratio > 0:
+                        st.write(f"✓ Working Capital Ratio: {working_capital_ratio:.2f}")
+                    if roa > 0:
+                        st.write(f"✓ Return on Assets: {roa:.2f}")
+                    if interest_coverage > 2:
+                        st.write(f"✓ Interest Coverage: {interest_coverage:.2f}")
+                    if ocf_to_debt > 0.2:
+                        st.write(f"✓ Op. Cash Flow to Debt: {ocf_to_debt:.2f}")
+                
+                with col2:
+                    st.write("**Risk factors:**")
+                    if working_capital_ratio < 0:
+                        st.write(f"⚠️ Working Capital Ratio: {working_capital_ratio:.2f}")
+                    if debt_to_equity > 1:
+                        st.write(f"⚠️ Debt to Equity: {debt_to_equity:.2f}")
+                    if interest_coverage < 1.5:
+                        st.write(f"⚠️ Interest Coverage: {interest_coverage:.2f}")
+                    if ocf_to_debt < 0.1:
+                        st.write(f"⚠️ Low Cash Flow to Debt: {ocf_to_debt:.2f}")
 
         except Exception as e:
             st.error(f"Prediction failed. Error: {e}")
