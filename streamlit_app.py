@@ -293,7 +293,8 @@ if page.startswith("1"):
     - A logistic regression model estimates bankruptcy probability over a 1-year period.
     - No subjective judgments — purely quantitative early warning system.
     """)
-
+    # Formula used
+    st.markdown("The formula we used to predict bankruptcy is:")
     st.latex(r"""z = \sum_{i=1}^{10} \alpha_i \cdot industry_i + \sum_{j=1}^{8} \beta_j \cdot ratio_j""")
     # Expanded explanation
     st.markdown("The above formula when expanded is:")
