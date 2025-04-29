@@ -586,42 +586,42 @@ elif page.startswith("5"):
                 
             # Additional context
             with st.expander("Factors influencing this prediction"):
-                # Explain which factors contributed most to the prediction
                 st.write("Key financial metrics and their impact:")
                 
                 positive_factors = []
                 risk_factors = []
                         
-                if ratios['working_capital_ratio'] > 0:
-                    positive_factors.append(f"Working Capital Ratio: {ratios['working_capital_ratio']:.2f}")
+                if working_capital_ratio > 0:
+                    positive_factors.append(f"Working Capital Ratio: {working_capital_ratio:.2f}")
                 else:
-                    risk_factors.append(f"Working Capital Ratio: {ratios['working_capital_ratio']:.2f}")
-                if ratios['roa'] > 0:
-                    positive_factors.append(f"Return on Assets: {ratios['roa']:.2f}")
-                else:
-                    risk_factors.append(f"Return on Assets: {ratios['roa']:.2f}")
-            
-                if ratios['interest_coverage'] > 2:
-                    positive_factors.append(f"Interest Coverage: {ratios['interest_coverage']:.2f}")
-                else:
-                    risk_factors.append(f"Interest Coverage: {ratios['interest_coverage']:.2f}")
-            
-                if ratios['ocf_to_debt'] > 0.2:
-                    positive_factors.append(f"Operating Cash Flow to Debt: {ratios['ocf_to_debt']:.2f}")
-                else:
-                    risk_factors.append(f"Operating Cash Flow to Debt: {ratios['ocf_to_debt']:.2f}")
-            
-                if ratios['ebit_to_assets'] < 0.03:
-                    risk_factors.append(f"EBIT to Assets: {ratios['ebit_to_assets']:.2f}")
+                    risk_factors.append(f"Working Capital Ratio: {working_capital_ratio:.2f}")
                 
-                if ratios['debt_to_equity'] > 2:
-                    risk_factors.append(f"Debt to Equity: {ratios['debt_to_equity']:.2f}")
+                if roa > 0:
+                    positive_factors.append(f"Return on Assets: {roa:.2f}")
+                else:
+                    risk_factors.append(f"Return on Assets: {roa:.2f}")
+            
+                if interest_coverage > 2:
+                    positive_factors.append(f"Interest Coverage: {interest_coverage:.2f}")
+                else:
+                    risk_factors.append(f"Interest Coverage: {interest_coverage:.2f}")
+            
+                if ocf_to_debt > 0.2:
+                    positive_factors.append(f"Operating Cash Flow to Debt: {ocf_to_debt:.2f}")
+                else:
+                    risk_factors.append(f"Operating Cash Flow to Debt: {ocf_to_debt:.2f}")
+            
+                if ebit_to_assets < 0.03:
+                    risk_factors.append(f"EBIT to Assets: {ebit_to_assets:.2f}")
                 
-                if ratios['receivables_turnover'] < 4:
-                    risk_factors.append(f"Low Receivables Turnover: {ratios['receivables_turnover']:.2f}")
+                if debt_to_equity > 2:
+                    risk_factors.append(f"Debt to Equity: {debt_to_equity:.2f}")
                 
-                if ratios['payables_turnover_days'] > 80:
-                    risk_factors.append(f"High Payables Turnover Days: {ratios['payables_turnover_days']:.2f}")
+                if receivables_turnover < 4:
+                    risk_factors.append(f"Low Receivables Turnover: {receivables_turnover:.2f}")
+                
+                if payables_turnover_days > 80:
+                    risk_factors.append(f"High Payables Turnover Days: {payables_turnover_days:.2f}")
                 
                 col1, col2 = st.columns(2)
                 
@@ -640,6 +640,6 @@ elif page.startswith("5"):
                             st.write(f"⚠️ {rf}")
                     else:
                         st.success("✅ No critical financial red flags detected. But still interpret bankruptcy probability carefully.")
-            
-            except Exception as e:
-                st.error(f"Prediction failed. Error: {e}")
+
+        except Exception as e:
+            st.error(f"Prediction failed. Error: {e}")
