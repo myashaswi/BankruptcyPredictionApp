@@ -396,7 +396,7 @@ elif page.startswith("2"):
                         st.error("🔴 High bankruptcy risk")
                      
                     # Additional context
-                        st.subheader("### Factors influencing this prediction")
+                        st.subheader("Factors influencing this prediction")
                         st.write("Key financial metrics and their impact:")
                         
                         positive_factors = []
@@ -585,7 +585,7 @@ elif page.startswith("5"):
                 st.error("🔴 High bankruptcy risk")
                 
             # Additional context
-                st.markdown("### Factors influencing this prediction")
+                st.markdown("Factors influencing this prediction")
                 st.write("Key financial metrics and their impact:")
                 
                 positive_factors = []
