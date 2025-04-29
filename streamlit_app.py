@@ -640,11 +640,6 @@ elif page.startswith("5"):
                             st.write(f"⚠️ {rf}")
                     else:
                         st.success("✅ No critical financial red flags detected. But still interpret bankruptcy probability carefully.")
-        
+            
             except Exception as e:
                 st.error(f"Prediction failed. Error: {e}")
-        else:
-            st.error(f"Could not retrieve sufficient financial data for {ticker}. Please check the ticker symbol.")
-    
-    except Exception as e:
-        st.error(f"Failed to fetch data or predict. Error: {e}")
