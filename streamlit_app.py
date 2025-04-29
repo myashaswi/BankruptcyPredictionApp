@@ -276,6 +276,9 @@ if page.startswith("1"):
     st.title("Altman Z-Score Inspired Industry-Specific Model")
     st.markdown(f"<h2 style='color:{red};'>What, How, Why?</h2>", unsafe_allow_html=True)
 
+    st.write("Rebecca Bubis; Yashaswi Maguluri; Brendan Wilcox")
+    st.markdown(f"<h2 style='color:{red};'>Rebecca Bubis, Yashaswi Maguluri, Brendan Wilcox?</h2>", unsafe_allow_html=True)
+    
     st.markdown(f"<h3 style='color:{red};'>What?</h3>", unsafe_allow_html=True)
     st.write("This app predicts bankruptcy risk using financial ratios and a logistic regression model tailored by industry groupings. It draws inspiration from Altman's Z-score but is expanded for modern datasets.")
 
