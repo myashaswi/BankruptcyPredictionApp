@@ -397,7 +397,6 @@ elif page.startswith("2"):
                      
                     # Additional context
                     st.subheader("Factors influencing this prediction")
-                    st.write("Key financial metrics and their impact:")
                     
                     positive_factors = []
                     risk_factors = []
@@ -587,7 +586,6 @@ elif page.startswith("5"):
                 
             # Additional context
             st.subheader("Factors influencing this prediction")
-            st.write("Key financial metrics and their impact:")
             
             positive_factors = []
             risk_factors = []
