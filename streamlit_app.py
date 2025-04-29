@@ -576,25 +576,8 @@ elif page.startswith("5"):
             # Format final probability
             pred_percent = smoothed_prob * 100
 
-            fig_manual = go.Figure(go.Indicator(
-                mode="gauge+number",
-                value=pred_percent,
-                number={'valueformat': '.1f'},
-                title={'text': "Bankruptcy Probability (%)"},
-                gauge={
-                    'axis': {'range': [0, 100]},
-                    'bar': {'color': red},
-                    'steps': [
-                        {'range': [0, 70], 'color': "lightgreen"},
-                        {'range': [71, 95], 'color': "yellow"},
-                        {'range': [96, 100], 'color': "red"}
-                    ],
-                }
-            ))
-            st.plotly_chart(fig_manual, use_container_width=True)
-            
             # Show risk interpretation
-            if pred_percent < 71:
+            if pred_percent < 80:
                 st.success("🟢 Low bankruptcy risk")
             elif pred_percent < 96:
                 st.warning("🟡 Moderate bankruptcy risk")
@@ -606,28 +589,62 @@ elif page.startswith("5"):
                 # Explain which factors contributed most to the prediction
                 st.write("Key financial metrics and their impact:")
                 
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.write("**Positive factors:**")
-                    if working_capital_ratio > 0:
-                        st.write(f"✓ Working Capital Ratio: {working_capital_ratio:.2f}")
-                    if roa > 0:
-                        st.write(f"✓ Return on Assets: {roa:.2f}")
-                    if interest_coverage > 2:
-                        st.write(f"✓ Interest Coverage: {interest_coverage:.2f}")
-                    if ocf_to_debt > 0.2:
-                        st.write(f"✓ Op. Cash Flow to Debt: {ocf_to_debt:.2f}")
+                positive_factors = []
+                risk_factors = []
+                        
+                if ratios['working_capital_ratio'] > 0:
+                    positive_factors.append(f"Working Capital Ratio: {ratios['working_capital_ratio']:.2f}")
+                else:
+                    risk_factors.append(f"Working Capital Ratio: {ratios['working_capital_ratio']:.2f}")
+                if ratios['roa'] > 0:
+                    positive_factors.append(f"Return on Assets: {ratios['roa']:.2f}")
+                else:
+                    risk_factors.append(f"Return on Assets: {ratios['roa']:.2f}")
+            
+                if ratios['interest_coverage'] > 2:
+                    positive_factors.append(f"Interest Coverage: {ratios['interest_coverage']:.2f}")
+                else:
+                    risk_factors.append(f"Interest Coverage: {ratios['interest_coverage']:.2f}")
+            
+                if ratios['ocf_to_debt'] > 0.2:
+                    positive_factors.append(f"Operating Cash Flow to Debt: {ratios['ocf_to_debt']:.2f}")
+                else:
+                    risk_factors.append(f"Operating Cash Flow to Debt: {ratios['ocf_to_debt']:.2f}")
+            
+                if ratios['ebit_to_assets'] < 0.03:
+                    risk_factors.append(f"EBIT to Assets: {ratios['ebit_to_assets']:.2f}")
                 
+                if ratios['debt_to_equity'] > 2:
+                    risk_factors.append(f"Debt to Equity: {ratios['debt_to_equity']:.2f}")
+                
+                if ratios['receivables_turnover'] < 4:
+                    risk_factors.append(f"Low Receivables Turnover: {ratios['receivables_turnover']:.2f}")
+                
+                if ratios['payables_turnover_days'] > 80:
+                    risk_factors.append(f"High Payables Turnover Days: {ratios['payables_turnover_days']:.2f}")
+                
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    st.markdown("**Positive Factors:**")
+                    if positive_factors:
+                        for pf in positive_factors:
+                            st.write(f"✓ {pf}")
+                    else:
+                        st.write("- None")
+        
                 with col2:
-                    st.write("**Risk factors:**")
-                    if working_capital_ratio < 0:
-                        st.write(f"⚠️ Working Capital Ratio: {working_capital_ratio:.2f}")
-                    if debt_to_equity > 1:
-                        st.write(f"⚠️ Debt to Equity: {debt_to_equity:.2f}")
-                    if interest_coverage < 1.5:
-                        st.write(f"⚠️ Interest Coverage: {interest_coverage:.2f}")
-                    if ocf_to_debt < 0.1:
-                        st.write(f"⚠️ Low Cash Flow to Debt: {ocf_to_debt:.2f}")
-
+                    st.markdown("**Risk Factors:**")
+                    if risk_factors:
+                        for rf in risk_factors:
+                            st.write(f"⚠️ {rf}")
+                    else:
+                        st.success("✅ No critical financial red flags detected. But still interpret bankruptcy probability carefully.")
+        
         except Exception as e:
             st.error(f"Prediction failed. Error: {e}")
+    else:
+        st.error(f"Could not retrieve sufficient financial data for {ticker}. Please check the ticker symbol.")
+
+except Exception as e:
+    st.error(f"Failed to fetch data or predict. Error: {e}")
